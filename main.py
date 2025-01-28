@@ -3,7 +3,7 @@ import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
-import moviepy.editor as me
+import moviepy as me
 import numpy as np
 import pydub, av, uuid
 from pathlib import Path
