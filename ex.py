@@ -12,21 +12,15 @@ from aiortc.contrib.media import MediaRecorder
 from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode
 import pyttsx3
 import speech_recognition as sr
-import moviepy as mp
-import threading 
 
 load_dotenv()
 
 engine = pyttsx3.init()
+engine.setProperty('rate', 150)
 
 def speak_text(text):
-    def run_engine():
-        engine.say(text)
-        engine.runAndWait()
-
-    # Run the engine in a separate thread
-    thread = threading.Thread(target=run_engine)
-    thread.start()
+    engine.say(text)
+    engine.runAndWait()
 
 # Speech Recognition
 def listen_and_analyze():
@@ -76,20 +70,20 @@ if "stream_ended_and_file_saved" not in st.session_state:
 
 def convert_to_wav():
     ctx = st.session_state.get("Start Interview")
-    if ctx:
-        state = ctx.state
-        if not state.playing and not state.signalling:
-            if in_file.exists():
-                time.sleep(1)   # wait for the file to be written
-                output_wav = RECORD_DIR / f"{prefix}_output.wav"
-                try:
-                    video = mp.VideoFileClip(str(in_file))
-                    video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
-                    st.success(f"Audio saved as {output_wav.name}")
-                    st.session_state['stream_ended_and_file_saved'] = True
-                except Exception as e:
-                    st.error(f"Error converting video to audio: {e}")
-                    st.session_state['stream_ended_and_file_saved'] = False
+    state = ctx.state
+    if ctx and not state.playing and not state.signalling:
+        if in_file.exists():
+            time.sleep(1)   # wait for the file to be written
+            output_wav = RECORD_DIR / f"{prefix}_output.wav"
+            try:
+                video = me.VideoFileClip(str(in_file))
+                video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
+                st.success(f"Audio saved as {output_wav.name}")
+                st.session_state['stream_ended_and_file_saved'] = output_wav
+            except Exception as e:
+                st.error(f"Error converting video to audio: {e}")
+                st.session_state['stream_ended_and_file_saved'] = None
+
 
 def in_recorder_factory() -> MediaRecorder:
     return MediaRecorder(str(in_file), format="mp4")
@@ -116,13 +110,7 @@ def process_audio(frame: av.AudioFrame) -> av.AudioFrame:
     return new_frame
 
 
-def start_interview():
-    if "pending_questions" in st.session_state:
-        while st.session_state["pending_questions"]:
-            question = st.session_state["pending_questions"].pop()
-            st.write(f"**Question:** {question}")
-            speak_text(question)
-            listen_and_analyze()
+
 
 # Columns for input
 col1, col2 = st.columns(2)
@@ -193,11 +181,12 @@ if button_click:
                 result = search_on_gemini(role, company, interviewer_type)
                 st.session_state['interview_question'] = result['questions'].copy()
                 st.session_state['pending_questions'] = st.session_state['interview_question'][::-1]
-               
+                # Display the results
+                # st.container(border=True,height=300) 
+                # st.container(border=True,height=300)
                 st.subheader(result["topic-title"])
                 for i in result['questions']:
                     st.markdown(f'-  **{i}**')
-                start_interview()
 
             else:
                 st.warning("Please enter a role to search.")
