@@ -11,14 +11,14 @@ from graphviz import Digraph
 load_dotenv()
 genai.configure(api_key = os.environ["GEMINI_API_KEY"])
 # st.sidebar.image('0')
-with st.sidebar:
-    st.image("assets\\img.png",width=300)
-    st.page_link("main.py",label="Home")
-    st.page_link("pages\\about.py",label="About")
-    st.page_link("pages\\contact.py", label="Contact")
-    st.page_link("pages\\result.py",label="Result")
-    st.page_link("pages\\chat.py",label="Chat With our AI")
-    st.page_link("pages\\roadmap.py",label="Roadmap")
+# with st.sidebar:
+#     st.image("assets\\img.png",width=300)
+#     st.page_link("main.py",label="Home")
+#     st.page_link("pages\\about.py",label="About")
+#     st.page_link("pages\\contact.py", label="Contact")
+#     st.page_link("pages\\result.py",label="Result")
+#     st.page_link("pages\\chat.py",label="Chat With our AI")
+#     st.page_link("pages\\roadmap.py",label="Roadmap")
     
 # Create a button for search functionality
 def get_roadmap_from_gemini(role):
