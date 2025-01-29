@@ -16,7 +16,6 @@ import moviepy as mp
 import threading 
 import footer
 
-
 load_dotenv()
 
 engine = pyttsx3.init()
@@ -25,8 +24,7 @@ def speak_text(text):
     def run_engine():
         engine.say(text)
         engine.runAndWait()
-
-    # Run the engine in a separate thread
+    
     thread = threading.Thread(target=run_engine)
     thread.start()
 
@@ -38,7 +36,7 @@ def listen_and_analyze():
         st.info("Listening for response...")
         recognizer.adjust_for_ambient_noise(source)
         audio = recognizer.listen(source)
-
+    
     try:
         response_text = recognizer.recognize_google(audio)
         st.write("Candidate's Response: ", response_text)
@@ -48,24 +46,20 @@ def listen_and_analyze():
     except sr.RequestError:
         st.error("Speech recognition request failed.")
 
-genai.configure(api_key = os.environ["GEMINI_API_KEY"])
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 def search_on_gemini(role, company, interviewer_type):
     model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = json.load(open("prompts/prompts.json"))
     response = model.generate_content(prompt.get('interviewer').format(role=role, difficulty_level=difficulty_level, company=company, interviewer_type=interviewer_type, company_type=company_type))
     results = json.loads(response.text)
-    # st.write(results)
     return results
 
-st.set_page_config(page_title='PlacementGuru',page_icon='🧊', layout='wide')
-
+st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 
 st.title("Placement Guru")
 
-# Base Path for Recordings
 RECORD_DIR = Path("records")
 RECORD_DIR.mkdir(exist_ok=True)
-
 
 if "prefix" not in st.session_state:
     st.session_state["prefix"] = str(uuid.uuid4())
@@ -75,14 +69,13 @@ in_file = RECORD_DIR / f"{prefix}_input.mp4"
 if "stream_ended_and_file_saved" not in st.session_state:
     st.session_state["stream_ended_and_file_saved"] = None
 
-
 def convert_to_wav():
     ctx = st.session_state.get("Start Interview")
     if ctx:
         state = ctx.state
         if not state.playing and not state.signalling:
             if in_file.exists():
-                time.sleep(1)   # wait for the file to be written
+                time.sleep(1)
                 output_wav = RECORD_DIR / f"{prefix}_output.wav"
                 try:
                     video = mp.VideoFileClip(str(in_file))
@@ -96,35 +89,19 @@ def convert_to_wav():
 def in_recorder_factory() -> MediaRecorder:
     return MediaRecorder(str(in_file), format="mp4")
 
-def process_audio(frame: av.AudioFrame) -> av.AudioFrame:
-    raw_samples = frame.to_ndarray()
-    sound = pydub.AudioSegment(
-        data=raw_samples.tobytes(),
-        sample_width=frame.format.bytes,
-        frame_rate=frame.sample_rate,
-        channels=len(frame.layout.channels),
-    )
-
-    sound = sound.apply_gain(gain)
-
-    # Ref: https://github.com/jiaaro/pydub/blob/master/API.markdown#audiosegmentget_array_of_samples  # noqa
-    channel_sounds = sound.split_to_mono()
-    channel_samples = [s.get_array_of_samples() for s in channel_sounds]
-    new_samples: np.ndarray = np.array(channel_samples).T
-    new_samples = new_samples.reshape(raw_samples.shape)
-
-    new_frame = av.AudioFrame.from_ndarray(new_samples, layout=frame.layout.name)
-    new_frame.sample_rate = frame.sample_rate
-    return new_frame
-
-
 def start_interview():
-    if "pending_questions" in st.session_state:
-        while st.session_state["pending_questions"]:
-            question = st.session_state["pending_questions"].pop()
-            st.write(f"**Question:** {question}")
-            speak_text(question)
-            listen_and_analyze()
+    if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
+        question = st.session_state["pending_questions"].pop()
+        st.session_state["current_question"] = question
+        st.write(f"**Question:** {question}")
+        speak_text(question)
+
+def next_question():
+    listen_and_analyze()
+    if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
+        start_interview()
+    else:
+        st.success("All questions have been answered.")
 
 # Columns for input
 col1, col2 = st.columns(2)
@@ -134,23 +111,14 @@ with col1.container(height=350):
     sec1, sec2 = st.columns(2)
     with sec1:
         company = st.selectbox('Company', options=('Google', 'Meta', 'Wipro', 'Accenture', 'Other'))
-        difficulty_level = st.selectbox('Difficulty',options=('Beginner','Intermediate','Expert'))
+        difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
         button_click = st.button("Search")
     with sec2:
         interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour','Friendly'))
         company_type = st.text_input("Company Type")
-    
 
-# WebRTC stream for recording interviews
 with col2.container(height=350):
-    # if st.button('Next Question'):
-    #     if st.session_state.get('pending_questions', None):
-    #         try:
-    #             speak_text(st.session_state['pending_questions'].pop())
-    #         except StopIteration:
-    #             speak_text("All Questions done")
-
-    webstream=webrtc_streamer(
+    webstream = webrtc_streamer(
         key="Start Interview",
         mode=WebRtcMode.SENDRECV,
         media_stream_constraints={'video': {'width': 960, 'height': 440}, "audio": {
@@ -158,25 +126,17 @@ with col2.container(height=350):
             "sampleSize": 16,
             'echoCancellation': True,
             "noiseSuppression": True,
-            "channelCount": 1}} ,
+            "channelCount": 1}},
         on_change=convert_to_wav,
-        audio_frame_callback=process_audio,
         in_recorder_factory=in_recorder_factory,
     )
 
     if st.session_state['stream_ended_and_file_saved']:
         st.switch_page('pages/process_result.py')
 
-
-    gain = st.slider("Gain", -10.0, +20.0, 1.0, 0.05)
-
-
-
-# st.sidebar.image('0')
 with st.sidebar:
     st.logo("assets\\img.png")
 
-# Create a button for search functionality
 st.divider()
 if button_click:
     with st.container(height=300):
@@ -191,17 +151,16 @@ if button_click:
 
         with st.spinner(text='Generating Questions...', ):
             if role:
-                # Call the search function with user input
                 result = search_on_gemini(role, company, interviewer_type)
                 st.session_state['interview_question'] = result['questions'].copy()
                 st.session_state['pending_questions'] = st.session_state['interview_question'][::-1]
-               
                 st.subheader(result["topic-title"])
                 for i in result['questions']:
                     st.markdown(f'-  **{i}**')
                 start_interview()
-
             else:
                 st.warning("Please enter a role to search.")
 
-footer.set_footer()
+if "current_question" in st.session_state:
+    if st.button("Next Question"):
+        next_question()
