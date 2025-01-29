@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from matplotlib import pyplot as plt
 
+st.set_page_config(page_icon="🧊")
 # Load environment variables
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])

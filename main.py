@@ -14,6 +14,8 @@ import pyttsx3
 import speech_recognition as sr
 import moviepy as mp
 import threading 
+import footer
+
 
 load_dotenv()
 
@@ -49,13 +51,13 @@ def listen_and_analyze():
 genai.configure(api_key = os.environ["GEMINI_API_KEY"])
 def search_on_gemini(role, company, interviewer_type):
     model = genai.GenerativeModel("gemini-1.5-flash")
-    prompt = json.load(open("prompts\prompts.json"))
+    prompt = json.load(open("prompts/prompts.json"))
     response = model.generate_content(prompt.get('interviewer').format(role=role, difficulty_level=difficulty_level, company=company, interviewer_type=interviewer_type, company_type=company_type))
     results = json.loads(response.text)
     # st.write(results)
     return results
 
-st.set_page_config(page_title='PlacementGuru', layout='wide')
+st.set_page_config(page_title='PlacementGuru',page_icon='🧊', layout='wide')
 
 
 st.title("Placement Guru")
@@ -201,3 +203,5 @@ if button_click:
 
             else:
                 st.warning("Please enter a role to search.")
+
+footer.set_footer()
