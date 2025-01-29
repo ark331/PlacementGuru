@@ -1,42 +1,41 @@
-import os, time
+import os
+import time
 import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
-import matplotlib.pyplot as plt
-import moviepy as me
-import numpy as np
-import pydub, av, uuid
-from pathlib import Path
 import json
 from aiortc.contrib.media import MediaRecorder
 from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode
 import pyttsx3
 import speech_recognition as sr
-import moviepy as mp
-import threading 
-import footer
+import uuid
+from pathlib import Path
+import threading
+import random
 
 load_dotenv()
 
 engine = pyttsx3.init()
 
+# Function to read out questions using TTS
 def speak_text(text):
     def run_engine():
         engine.say(text)
         engine.runAndWait()
-    
+
     thread = threading.Thread(target=run_engine)
     thread.start()
 
-# Speech Recognition
+# Function to analyze speech
 def listen_and_analyze():
     recognizer = sr.Recognizer()
     mic = sr.Microphone()
+
     with mic as source:
         st.info("Listening for response...")
         recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
-    
+        audio = recognizer.listen(source, timeout=5)  # Timeout added here
+
     try:
         response_text = recognizer.recognize_google(audio)
         st.write("Candidate's Response: ", response_text)
@@ -44,9 +43,11 @@ def listen_and_analyze():
     except sr.UnknownValueError:
         st.warning("Could not understand the response.")
     except sr.RequestError:
-        st.error("Speech recognition request failed.")
+            st.error("Speech recognition request failed.")
+    
+            next_question()
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+# Function to interact with Gemini API and get interview questions
 def search_on_gemini(role, company, interviewer_type):
     model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = json.load(open("prompts/prompts.json"))
@@ -54,10 +55,12 @@ def search_on_gemini(role, company, interviewer_type):
     results = json.loads(response.text)
     return results
 
+# Setup Streamlit page
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 
 st.title("Placement Guru")
 
+# Directory for saving recordings
 RECORD_DIR = Path("records")
 RECORD_DIR.mkdir(exist_ok=True)
 
@@ -69,6 +72,7 @@ in_file = RECORD_DIR / f"{prefix}_input.mp4"
 if "stream_ended_and_file_saved" not in st.session_state:
     st.session_state["stream_ended_and_file_saved"] = None
 
+# Function to convert video to wav
 def convert_to_wav():
     ctx = st.session_state.get("Start Interview")
     if ctx:
@@ -86,9 +90,11 @@ def convert_to_wav():
                     st.error(f"Error converting video to audio: {e}")
                     st.session_state['stream_ended_and_file_saved'] = False
 
+# Streamer factory
 def in_recorder_factory() -> MediaRecorder:
     return MediaRecorder(str(in_file), format="mp4")
 
+# Function to start the interview
 def start_interview():
     if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
         question = st.session_state["pending_questions"].pop()
@@ -96,12 +102,14 @@ def start_interview():
         st.write(f"**Question:** {question}")
         speak_text(question)
 
+# Function to move to next question
 def next_question():
     listen_and_analyze()
     if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
         start_interview()
     else:
         st.success("All questions have been answered.")
+        st.balloons()  # Triggering the balloon effect when the interview is over
 
 # Columns for input
 col1, col2 = st.columns(2)
@@ -114,10 +122,11 @@ with col1.container(height=350):
         difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
         button_click = st.button("Search")
     with sec2:
-        interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour','Friendly'))
+        interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour', 'Friendly'))
         company_type = st.text_input("Company Type")
 
 with col2.container(height=350):
+    # Start video stream when the search button is clicked
     webstream = webrtc_streamer(
         key="Start Interview",
         mode=WebRtcMode.SENDRECV,
@@ -128,16 +137,9 @@ with col2.container(height=350):
             "noiseSuppression": True,
             "channelCount": 1}},
         on_change=convert_to_wav,
-        in_recorder_factory=in_recorder_factory,
     )
 
-    if st.session_state['stream_ended_and_file_saved']:
-        st.switch_page('pages/process_result.py')
-
-with st.sidebar:
-    st.logo("assets\\img.png")
-
-st.divider()
+# Logic for when the search button is clicked
 if button_click:
     with st.container(height=300):
         st.markdown("""
@@ -149,7 +151,7 @@ if button_click:
             }
         </style>""", unsafe_allow_html=True)
 
-        with st.spinner(text='Generating Questions...', ):
+        with st.spinner(text='Generating Questions...'):
             if role:
                 result = search_on_gemini(role, company, interviewer_type)
                 st.session_state['interview_question'] = result['questions'].copy()
@@ -161,6 +163,7 @@ if button_click:
             else:
                 st.warning("Please enter a role to search.")
 
+# Handling the next question button
 if "current_question" in st.session_state:
     if st.button("Next Question"):
         next_question()
