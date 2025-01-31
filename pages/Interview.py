@@ -80,7 +80,7 @@ def convert_to_wav():
                 try:
                     video = mp.VideoFileClip(str(in_file))
                     video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
-                    st.success(f"Audio saved as {output_wav.name}")
+                    st.session_state['audio_file_path'] = str(output_wav)  # Store path
                     st.session_state['stream_ended_and_file_saved'] = True
                 except Exception as e:
                     st.error(f"Error converting video to audio: {e}")
@@ -132,9 +132,8 @@ with col2.container(height=350):
         in_recorder_factory=in_recorder_factory,
     )
 
-    if st.session_state['stream_ended_and_file_saved']:
+    if st.session_state.get('stream_ended_and_file_saved'):
         st.switch_page('pages/Report.py')
-
 with st.sidebar:
     st.logo("assets\\img.png")
 

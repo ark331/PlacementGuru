@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 from matplotlib import pyplot as plt
 
 st.set_page_config(page_icon="🧊")
+
+
+
+
 # Load environment variables
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
@@ -13,10 +17,13 @@ genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 # Set up the Streamlit app
 st.title('Analysis Report')
 
-# File name for the audio to be transcribed
-file_name = st.session_state['stream_ended_and_file_saved']
+if 'audio_file_path' not in st.session_state:
+    st.error("No recording found! Please complete an interview first.")
+    st.stop()
 
-questions = st.session_state['interview_question']
+# File name for the audio to be transcribed
+file_name = st.session_state['audio_file_path']
+# questions = st.session_state['interview_question']
 
 def get_gemini_suggestions(transcript):
     prompt = (
