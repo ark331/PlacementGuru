@@ -50,7 +50,7 @@ with section_1.container(height=350):
             
             total_words = f"The total count of words are: {len(words)}"
             filler_count = f"The filler count is : {sum(words.count(filler) for filler in filler_words)}"
-            non_filler_count = total_words-filler_count
+            non_filler_count = (total_words)-(filler_count)
 
             non_filler_words = f"The Count for non-filler words are: {non_filler_count}"
             filler_percentage = f"Filler percentage is: {(filler_count / total_words * 100) if total_words > 0 else 0}"
