@@ -5,15 +5,29 @@ from email.message import EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+import re
+from email_validator import validate_email,EmailNotValidError
 
 load_dotenv()
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")  
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")  
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER") 
 
+def clear_form():
+    st.session_state["name"]=""
+    st.session_state["email"]=""
+    st.session_state["message"]=""
+
 def send_email(user_name, user_email, user_message):
     """Sends an email where the Reply-To address is the user's email."""
     try:
+
+        try:
+            valid_email = validate_email(email)
+            email = valid_email.email
+        except EmailNotValidError:
+            st.error(f"❌ Invalid email address: {email}")
+            return
         msg = EmailMessage()
         msg.set_content(f"Name: {user_name}\nEmail: {user_email}\nMessage:\n{user_message}")
         msg["Subject"] = f"This is {user_name} regarding PlacementGuru."
@@ -30,7 +44,13 @@ def send_email(user_name, user_email, user_message):
     except Exception as e:
         print("Error:", e)
         return False  # Email sending failed
+    finally:
+        clear_form()
 
+def validate_email(email):
+    email_val = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$]'
+    if not re.match(email_val,email):
+        st.error("Please enter valid email")
 
 
 st.set_page_config(page_title='PlacementGuru', layout='wide')
@@ -40,8 +60,9 @@ with st.form("contact_form"):
     # phone_number = st.number_input("Phone Number")
     message = st.text_area("Message")
     button = st.form_submit_button("Submit")
-
+    
     if button:
+        validate_email(email)
         if name and email and message:
             success = send_email(name, email, message)
             if success:
