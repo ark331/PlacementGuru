@@ -47,11 +47,6 @@ def send_email(user_name, user_email, user_message):
     finally:
         clear_form()
 
-def validate_email(email):
-    email_val = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$]'
-    if not re.match(email_val,email):
-        st.error("Please enter valid email")
-
 
 st.set_page_config(page_title='PlacementGuru', layout='wide')
 with st.form("contact_form"):
@@ -62,7 +57,6 @@ with st.form("contact_form"):
     button = st.form_submit_button("Submit")
     
     if button:
-        validate_email(email)
         if name and email and message:
             success = send_email(name, email, message)
             if success:
