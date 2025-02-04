@@ -48,14 +48,18 @@ with section_1.container(height=350):
             transcript_lower = transcript.lower()  
             words = transcript_lower.split()
             
-            total_words = f"The total count of words are: {len(words)}"
-            filler_count = f"The filler count is : {sum(words.count(filler) for filler in filler_words)}"
-            non_filler_count = (total_words)-(filler_count)
+            total_words = len(words)
+            filler_count = sum(words.count(filler) for filler in filler_words)
+            non_filler_count = int(total_words)-int(filler_count)
 
-            non_filler_words = f"The Count for non-filler words are: {non_filler_count}"
-            filler_percentage = f"Filler percentage is: {(filler_count / total_words * 100) if total_words > 0 else 0}"
+            non_filler_words = non_filler_count
+            filler_percentage = (filler_count / total_words * 100) if total_words > 0 else 0
 
-            return total_words, filler_count, non_filler_words, filler_percentage
+            st.write(f"The total words in this transcript: {total_words}")
+            st.write(f"The total words in this transcript: {filler_count}")
+            st.write(f"The total words in this transcript: {filler_percentage}")
+            st.write(f"The total words in this transcript: {non_filler_words}")
+            
         
         if "text" in result:
             st.write(check_filler_words(result["text"]))
