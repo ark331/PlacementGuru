@@ -13,6 +13,7 @@ EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")  
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER") 
 
+st.set_page_config(page_title='PlacementGuru', layout='wide')
 def clear_form():
     st.session_state["name"]=""
     st.session_state["email"]=""
@@ -48,7 +49,6 @@ def send_email(user_name, user_email, user_message):
         clear_form()
 
 
-st.set_page_config(page_title='PlacementGuru', layout='wide')
 with st.form("contact_form"):
     name = st.text_input("Name",max_chars=100)
     email = st.text_input("Email")
