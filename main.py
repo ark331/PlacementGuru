@@ -52,6 +52,14 @@ with col1:
     if st.button("Let's get started"):
         st.switch_page("pages/Interview.py")
 
+    st.markdown(
+            """
+            <br>
+            <i>If you are encountering any problem or you have any suggestions, feel free to contact us by sharing your thoughts.<i>
+            """,
+            unsafe_allow_html=True
+        )
+
 # Image on the right
 with col2:
     st.markdown('<div class="image-box">', unsafe_allow_html=True)
