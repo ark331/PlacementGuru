@@ -23,10 +23,10 @@ def send_email(user_name, user_email, user_message):
     try:
 
         try:
-            valid_email = validate_email(email)
+            valid_email = validate_email(user_email)
             email = valid_email.email
         except EmailNotValidError:
-            st.error(f"❌ Invalid email address: {email}")
+            st.error(f"❌ Invalid email address: {user_email}")
             return
         msg = EmailMessage()
         msg.set_content(f"Name: {user_name}\nEmail: {user_email}\nMessage:\n{user_message}")
@@ -39,7 +39,6 @@ def send_email(user_name, user_email, user_message):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL_SENDER, EMAIL_PASSWORD)
             server.send_message(msg)
-
         return True  # Email sent successfully
     except Exception as e:
         print("Error:", e)
