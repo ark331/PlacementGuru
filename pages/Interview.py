@@ -15,6 +15,7 @@ import speech_recognition as sr
 import moviepy as mp
 import threading 
 import footer
+import fitz
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -39,7 +40,7 @@ with tab1:
         with mic as source:
             st.info("Listening for response...")
             recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source)
+            audio = recognizer.listen(source,timeout=5)
         
         try:
             response_text = recognizer.recognize_google(audio)
@@ -118,7 +119,7 @@ with tab1:
             difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
             button_click = st.button("Search")
         with sec2:
-            interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour','Friendly'))
+            interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour','Friendly','Code Questions'))
             company_type = st.text_input("Company Type")
 
     with col2.container(height=350):
@@ -168,7 +169,7 @@ with tab1:
         if st.button("Next Question"):
             next_question()
 
-
+# Viva Section
 with tab2:
     engine = pyttsx3.init()
     def speak_text(text):
@@ -185,7 +186,7 @@ with tab2:
         with mic as source:
             st.info("Listening for response...")
             recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source)
+            audio = recognizer.listen(source,timeout=5)
         try:
             response_text = recognizer.recognize_google(audio)
             st.write("Candidate's Response: ", response_text)
@@ -217,6 +218,7 @@ with tab2:
     if "stream_ended_and_file_saved" not in st.session_state:
         st.session_state["stream_ended_and_file_saved"] = None
 
+# Extract audio in Wav format
     def convert_to_wav():
         ctx = st.session_state.get("Start Interview")
         if ctx:
@@ -254,15 +256,25 @@ with tab2:
 
     # Columns for input
     col1, col2 = st.columns(2)
+    def extract_text_from_pdf(uploaded_file):
+        try:
+            with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+                text = "\n".join([page.get_text("text") for page in doc])
+            return text
+        except Exception as e:
+            return f"Error extracting text: {str(e)}"
+    
+    def generate_questions(pdf_text):
+        prompt = f"Read the following text and generate five interview-style questions based on it:\n\n{pdf_text[:3000]}"  # Limiting to 3000 characters
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(prompt)
+        return response.text if response else "No questions generated."
 
     with col1.container(height=350):
         uploaded_files = st.file_uploader(
         "Upload your BlackBook/ Project File", accept_multiple_files=True
         )
-        # for uploaded_file in uploaded_files:
-        #     bytes_data = uploaded_file.read()
-        #     st.write("filename:", uploaded_file.name)
-        #     st.write(bytes_data)
+        
 
     with col2.container(height=350):
         webstream = webrtc_streamer(
