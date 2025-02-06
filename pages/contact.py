@@ -15,9 +15,9 @@ EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 
 st.set_page_config(page_title='PlacementGuru', layout='wide')
 def clear_form():
-    st.session_state["name"]=""
-    st.session_state["email"]=""
-    st.session_state["message"]=""
+    st.session_state["name"]=" "
+    st.session_state["email"]=" "
+    st.session_state["message"]=" "
 
 def send_email(user_name, user_email, user_message):
     """Sends an email where the Reply-To address is the user's email."""
