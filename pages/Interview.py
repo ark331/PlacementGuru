@@ -15,7 +15,6 @@ import speech_recognition as sr
 import moviepy as mp
 import threading 
 import footer
-import fitz
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -40,7 +39,7 @@ with tab1:
         with mic as source:
             st.info("Listening for response...")
             recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source,timeout=5)
+            audio = recognizer.listen(source)
         
         try:
             response_text = recognizer.recognize_google(audio)
@@ -186,7 +185,7 @@ with tab2:
         with mic as source:
             st.info("Listening for response...")
             recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source,timeout=5)
+            audio = recognizer.listen(source)
         try:
             response_text = recognizer.recognize_google(audio)
             st.write("Candidate's Response: ", response_text)
@@ -256,13 +255,6 @@ with tab2:
 
     # Columns for input
     col1, col2 = st.columns(2)
-    def extract_text_from_pdf(uploaded_file):
-        try:
-            with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-                text = "\n".join([page.get_text("text") for page in doc])
-            return text
-        except Exception as e:
-            return f"Error extracting text: {str(e)}"
     
     def generate_questions(pdf_text):
         prompt = f"Read the following text and generate five interview-style questions based on it:\n\n{pdf_text[:3000]}"  # Limiting to 3000 characters
