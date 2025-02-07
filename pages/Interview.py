@@ -311,6 +311,6 @@ with tab2:
                 else:
                     st.warning("Please enter a role to search.")
 
-    if "current_question" in st.session_state:
-        if st.button("Next Question"):
-            next_question()
+    # if "current_question" in st.session_state:
+    #     if st.button("Next Question"):
+    #         next_question()

@@ -24,7 +24,7 @@ file_name = st.session_state['audio_file_path']
 
 def get_gemini_suggestions(transcript):
     prompt = (
-        f"Give me suggestions on how to avoid using filler words like 'you know' during a conversation in an interview in 5-6 lines."
+        f"Give me suggestions on how to avoid using filler words like from {transcript} 'you know' during a conversation in an interview in 5-6 lines."
     )
     model = genai.GenerativeModel("gemini-1.5-flash")
     response = model.generate_content(prompt)
@@ -56,9 +56,9 @@ with section_1.container(height=500):
             filler_percentage = (filler_count / total_words * 100) if total_words > 0 else 0
 
             st.write(f"The total words in this transcript: {total_words}")
-            st.write(f"The total words in this transcript: {filler_count}")
-            st.write(f"The total words in this transcript: {filler_percentage}")
-            st.write(f"The total words in this transcript: {non_filler_words}")
+            st.write(f"The total filler count in this transcript: {filler_count}")
+            st.write(f"The filler percentage in this transcript: {filler_percentage}")
+            st.write(f"The non-filler count in this transcript: {non_filler_words}")
 
             labels = ['Filler Words', 'Non-Filler Words']
             sizes = [filler_words,non_filler_words]
