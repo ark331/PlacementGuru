@@ -7,6 +7,8 @@ import networkx as nx
 import textwrap
 import matplotlib.patches as mpatches
 from graphviz import Digraph
+import ast
+from io import BytesIO
 
 load_dotenv()
 genai.configure(api_key = os.environ["GEMINI_API_KEY"])
@@ -21,82 +23,118 @@ genai.configure(api_key = os.environ["GEMINI_API_KEY"])
 #     st.page_link("pages\\roadmap.py",label="Roadmap")
     
 # Create a button for search functionality
-def get_roadmap_from_gemini(role):
-    # Define the prompt for Gemini to generate a role-specific roadmap
+def get_roadmap_from_gemini(role, difficulty):
     prompt = (
-        f"Please create a flowchart describing the steps involved in a career roadmap for someone aspiring to become a {role}. "
-        f"i don't want additional information just show me the nodes in a list of [(from, to)]"
-    )             
-    # Fetch the response from the model
+        f"Create a career roadmap for a {role} at {difficulty} level. "
+        f"Return only a Python list of tuples representing connections between steps. "
+        f"Format: [(step1, step2), (step2, step3), ...]. "
+        f"Keep steps concise (2-3 words max). Include 6-8 connected steps."
+    )
+    
     model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content(prompt)
     
-    # Process the response into a roadmap format
-    # Assume the response is a structured list of stages and tasks
+    # Extract the list from the response
+    try:
+        # Find the list in the response text using string manipulation
+        start_idx = response.text.find('[')
+        end_idx = response.text.find(']') + 1
+        if start_idx != -1 and end_idx != -1:
+            roadmap_list = ast.literal_eval(response.text[start_idx:end_idx])
+            return roadmap_list
+        return []
+    except:
+        st.error("Failed to parse the roadmap data")
+        return []
+
+def create_roadmap_graph(connections):
+    # Create a directed graph
+    G = nx.DiGraph()
     
-    roadmap_text = response.text.strip()
-    st.write(roadmap_text)
-    return parse_roadmap(roadmap_text)
+    # Add edges from connections
+    G.add_edges_from(connections)
+    
+    # Create the figure with a larger size
+    plt.figure(figsize=(15, 10))
+    
+    # Use a specific layout for better node distribution
+    pos = nx.spring_layout(G, k=1, iterations=50)
+    
+    # Draw the graph
+    nx.draw(G, pos,
+            node_color='lightblue',
+            node_size=3000,
+            arrowsize=20,
+            edge_color='gray',
+            width=2,
+            with_labels=False)
+    
+    # Add labels with better positioning and formatting
+    labels = {node: f'\n'.join(textwrap.wrap(node, width=15))
+              for node in G.nodes()}
+    
+    nx.draw_networkx_labels(G, pos,
+                           labels,
+                           font_size=10,
+                           font_weight='bold')
+    
+    # Add a title
+    plt.title("Career Roadmap", pad=20, size=16)
+    
+    # Remove axes
+    plt.axis('off')
+    
+    return plt
 
-def create_graphviz_diagram(nodes, edges):
-    graph = Digraph(format='fig')
+def roadmap_tab():
+    st.title("Career Roadmap Generator")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        role = st.text_input("Enter your target role", placeholder="e.g., Full Stack Developer")
+    with col2:
+        difficulty = st.selectbox("Select difficulty level", 
+                                options=["Beginner", "Intermediate", "Advanced"])
+    
+    if st.button("Generate Roadmap", type="primary"):
+        with st.spinner("Generating your career roadmap..."):
+            # Get the roadmap data
+            connections = get_roadmap_from_gemini(role, difficulty)
+            
+            if connections:
+                # Create two columns for different visualizations
+                viz_col1, viz_col2 = st.columns([2, 1])
+                
+                with viz_col1:
+                    st.subheader("Interactive Roadmap")
+                    # Create and display the matplotlib graph
+                    fig = create_roadmap_graph(connections)
+                    st.pyplot(fig)
+                
+                with viz_col2:
+                    st.subheader("Step-by-Step Path")
+                    # Create a numbered list of steps
+                    steps = set()
+                    for start, end in connections:
+                        steps.add(start)
+                        steps.add(end)
+                    
+                    for i, step in enumerate(sorted(steps), 1):
+                        st.markdown(f"**{i}.** {step}")
+                
+                # Add download button for the graph
+                buf = BytesIO()
+                plt.savefig(buf, format='png', bbox_inches='tight')
+                buf.seek(0)
+                st.download_button(
+                    label="Download Roadmap",
+                    data=buf,
+                    file_name=f"{role}_roadmap.png",
+                    mime="image/png"
+                )
+            else:
+                st.error("Failed to generate roadmap. Please try again.")
 
-    # Add nodes to the graph
-    for node in nodes:
-        graph.node(node)
-
-    # Create edges between nodes
-    for from_node, to_node in edges:
-        graph.edge(from_node, to_node)
-
-    return graph
-
-def parse_roadmap(roadmap_text):
-    lines = roadmap_text.split("\n")
-    nodes = set()
-    edges = []
-
-    for line in lines:
-        if "->" in line:
-            parts = line.split("->")
-            from_node = parts[0].strip()
-            to_node = parts[1].strip()
-            edges.append((from_node, to_node))
-            nodes.add(from_node)
-            nodes.add(to_node)
-
-    return nodes, edges
-
-# Function to create a Graphviz diagram from the roadmap
-def create_graphviz_diagram(nodes, edges):
-    graph = Digraph(format='png')
-
-    # Add nodes to the graph
-    for node in nodes:
-        graph.node(node)
-
-    # Create edges between nodes
-    for from_node, to_node in edges:
-        graph.edge(from_node, to_node)
-
-    # Set the size of the graph
-    graph.attr(size='50,50')  # Adjust this size as needed
-    graph.attr('node', fontsize='20')  # Adjust node font size
-    graph.attr('edge', fontsize='20')  # Adjust edge font size
-
-    return graph
-
-role = st.text_input("Enter role")
-difficulty = st.selectbox("Diffculty",options=("Beginner","Intermediate","Advance"))
-if st.button("Generate Roadmap"):
-    nodes, edges = get_roadmap_from_gemini(role)
-
-    # Display the roadmap in tree format using Graphviz
-    if nodes and edges:
-        st.write(f"**Roadmap for {role}**")
-        
-        # Create and display the Graphviz diagram
-        diagram = create_graphviz_diagram(nodes, edges)
-        st.graphviz_chart(diagram)
-    else:
-        st.error("No roadmap found. Please try again.")
+if __name__ == "__main__":
+    roadmap_tab()
