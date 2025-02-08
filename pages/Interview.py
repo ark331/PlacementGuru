@@ -100,31 +100,34 @@ with tab1:
             speak_text(question)
 
     def next_question():
-        """ Move to the next question, store the response, and continue the interview. """
+        """Handle transition to next question professionally"""
         if st.session_state.get('pending_questions'):
-            # Store current question's response
             current_question = st.session_state['pending_questions'][0]
             response = listen_and_analyze()  # Get user's answer
             
-            if response:  # Only proceed if we got a response
+            if response:
+                # Store response
+                if 'responses' not in st.session_state:
+                    st.session_state['responses'] = {}
                 st.session_state['responses'][current_question] = response
-                # Remove the current question from pending questions
+                
+                # Remove current question
                 st.session_state['pending_questions'].pop(0)
-
+                
                 # Check if there are more questions
                 if st.session_state['pending_questions']:
-                    # Update current question for display
-                    st.session_state['current_question'] = st.session_state['pending_questions'][0]
-                    # Speak the next question
-                    speak_text(st.session_state['pending_questions'][0])
+                    # Get next question ready
+                    next_q = st.session_state['pending_questions'][0]
+                    st.session_state['current_question'] = next_q
+                    # Speak next question
+                    speak_text(next_q)
+                    # Force streamlit to rerun and show new question
+                    st.experimental_rerun()
                 else:
                     st.success("🎉 Interview completed!")
-                    # Ensure we have the audio file path in session state
                     if 'audio_file_path' in st.session_state:
-                        time.sleep(1)  # Small delay to ensure file is saved
+                        time.sleep(1)
                         st.switch_page("pages/Report.py")
-                    else:
-                        st.error("Audio recording not found. Please try again.")
 
     # Columns for input
     col1, col2 = st.columns(2)
@@ -156,10 +159,21 @@ with tab1:
             },
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
+            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},  # Add STUN server
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
             st.switch_page('pages/Report.py')
+
+    # Add this check to maintain stream state
+    if webstream.state.playing:
+        st.session_state['stream_active'] = True
+    elif 'stream_active' in st.session_state:
+        # Stream ended
+        if st.session_state['stream_active']:
+            st.session_state['stream_active'] = False
+            convert_to_wav()  # Convert the recording
+
     with st.sidebar:
         st.logo("assets\\img.png")
 
@@ -197,19 +211,19 @@ with tab1:
             current_q = st.session_state['pending_questions'][0]
             st.markdown(f"**{current_q}**")
             
-            # Show recording indicator
             if st.session_state.get('listening'):
                 st.info("🎤 Recording your answer...")
         
         with button_col:
-            st.write("")  # Add some spacing
-            st.write("")  # Add some spacing
-            # Add unique identifier using timestamp
-            button_key = f"next_question_btn_{time.time()}"
+            st.write("")  # Spacing
+            st.write("")  # Spacing
+            # Use timestamp for unique key
+            button_key = f"next_q_{int(time.time()*1000)}"
             next_button = st.button(
                 "Next Question ➡️" if len(st.session_state['pending_questions']) > 1 else "Finish Interview ✅",
                 key=button_key,
-                use_container_width=True
+                use_container_width=True,
+                type="primary"  # Make button more prominent
             )
             if next_button:
                 next_question()
@@ -263,7 +277,6 @@ with tab2:
     if "stream_ended_and_file_saved" not in st.session_state:
         st.session_state["stream_ended_and_file_saved"] = None
 
-# Extract audio in Wav format
     def convert_to_wav():
         ctx = st.session_state.get("Start Interview")
         if ctx:
@@ -292,7 +305,7 @@ with tab2:
             speak_text(question)
 
     def next_question():
-        """ Move to the next question, store the response, and continue the interview. """
+        """Move to the next question, store the response, and continue the interview. """
         if st.session_state.get('pending_questions'):
             # Store current question's response
             current_question = st.session_state['pending_questions'][0]
