@@ -25,8 +25,6 @@ st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 tab1, tab2 = st.tabs(["Interview","Viva"])
 
 with tab1:
-    
-
     def speak_text(text):
         with tempfile.NamedTemporaryFile(delete=True, suffix=".mp3") as temp_audio:
             temp_audio_path = temp_audio.name
@@ -54,13 +52,13 @@ with tab1:
             st.error("Speech recognition request failed.")
 
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    def search_on_gemini(role, company, interviewer_type):
+
+    def search_on_gemini(role, company, interviewer_type,company_type,difficulty_level):
         model = genai.GenerativeModel("gemini-1.5-flash")
         prompt = json.load(open("prompts/prompts.json"))
-        response = model.generate_content(prompt.get('interviewer').format(role=role, difficulty_level=difficulty_level, company=company, interviewer_type=interviewer_type, company_type=company_type))
+        response = model.generate_content(prompt.get('interviewer').format(role=role, company=company, interviewer_type=interviewer_type, difficulty_level=difficulty_level,company_type=company_type))
         results = json.loads(response.text)
         return results
-
 
     st.title("PlacementGuru")
 
@@ -103,33 +101,25 @@ with tab1:
             
             st.write(f"**Question:** {st.session_state['current_question']}")
             speak_text(st.session_state["current_question"])
+            
 
     def next_question():
+        st.write(f"Pending Questions: {st.session_state['pending_questions']}")
         if st.session_state["pending_questions"]:
-            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)  # Update first
-            speak_text(st.session_state["current_question"])  # Then speak
+            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)  # Get the next question
+            st.write(f"**Question:** {st.session_state['current_question']}")
+            speak_text(st.session_state["current_question"])  # Speak the next question
         else:
-            st.balloons()
-    # if "current_question" in st.session_state:
-    #     if st.session_state.get('pending_questions'):
-    #         st.divider()
-    #         question_col, button_col = st.columns([3, 1])
-
-    #         with question_col:
-    #             st.subheader("Current Question:")
-    #             st.markdown(f"**{st.session_state['current_question']}**")  # Show current question
-            
-    #             if st.session_state.get('listening'):
-    #                 st.info("🎤 Recording your answer...")
-
-    #         with button_col:
-    #             if st.button("Next Question"):
-    #                 next_question()
+        # If there are no more questions, show balloons and finish
+            st.write("No more questions left.")  # Debugging message
+            st.balloons()  # If no more questions, show balloons
+            st.write("**Interview Completed!**")
+            st.success("You've answered all the questions. Great job!")
 
     # Columns for input
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])
 
-    with col1.container(height=350):
+    with col1:
         role = st.text_input('Role', placeholder='What role are you seeking for!')
         sec1, sec2 = st.columns(2)
         with sec1:
@@ -137,10 +127,10 @@ with tab1:
             difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
             button_click = st.button("Search")
         with sec2:
-            interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour','Friendly'))
+            interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour', 'Friendly'))
             company_type = st.text_input("Company Type")
 
-    with col2.container(height=350):
+    with col2:
         webstream = webrtc_streamer(
             key="Start Interview",
             mode=WebRtcMode.SENDRECV,
@@ -156,24 +146,17 @@ with tab1:
 
         if st.session_state.get('stream_ended_and_file_saved'):
             st.switch_page('pages/Report.py')
-    with st.sidebar:
-        st.logo("assets\\img.png")
+    
 
     st.divider()
-    if button_click:
-        with st.container(height=300):
-            st.markdown("""
-            <style>
-                div.stSpinner > div{
-                text-align:center;
-                align-items: center;
-                justify-content: center;
-                }
-            </style>""", unsafe_allow_html=True)
 
-            with st.spinner(text='Generating Questions...', ):
+    if button_click:
+        with st.container():
+            st.markdown("""<style> div.stSpinner > div { text-align: center; align-items: center; justify-content: center; } </style>""", unsafe_allow_html=True)
+
+            with st.spinner(text='Generating Questions...'):
                 if role:
-                    result = search_on_gemini(role, company, interviewer_type)
+                    result = search_on_gemini(role, company, interviewer_type,difficulty_level,company_type)
                     st.session_state['interview_question'] = result['questions'].copy()
                     st.session_state['pending_questions'] = st.session_state['interview_question'][::-1]
                     st.subheader(result["topic-title"])
@@ -190,19 +173,13 @@ with tab1:
 
             with question_col:
                 st.subheader("Current Question:")
-                st.markdown(f"**{st.session_state['current_question']}**")  # Show current question
-
-                if st.session_state.get('listening'):
-                    st.info("🎤 Recording your answer...")
+                st.markdown(f"**{st.session_state['current_question']}**")
 
             with button_col:
                 if st.button("Next Question"):
                     next_question()
 
-        elif st.session_state.get("interview_over", False):  # Only show balloons when interview is actually over
-            st.subheader("🎉 Interview Completed!")
-            st.success("You've answered all the questions. Great job!")
-            st.balloons()  # 🎈 Show celebration when questions are over
+
 
      
 
