@@ -15,6 +15,9 @@ import speech_recognition as sr
 import moviepy as mp
 import threading 
 import footer
+from gtts import gTTS
+import tempfile
+from playsound import playsound
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -22,15 +25,15 @@ st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 tab1, tab2 = st.tabs(["Interview","Viva"])
 
 with tab1:
-    engine = pyttsx3.init()
+    
 
     def speak_text(text):
-        def run_engine():
-            engine.say(text)
-            engine.runAndWait()
-        
-        thread = threading.Thread(target=run_engine)
-        thread.start()
+        with tempfile.NamedTemporaryFile(delete=True, suffix=".mp3") as temp_audio:
+            temp_audio_path = temp_audio.name
+        tts = gTTS(text=text, lang="en")
+        tts.save(temp_audio.name)
+        playsound(temp_audio.name) 
+        os.remove(temp_audio_path)
 
     # Speech Recognition
     def listen_and_analyze():
@@ -102,11 +105,26 @@ with tab1:
             speak_text(st.session_state["current_question"])
 
     def next_question():
-        if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
-            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)
+        if st.session_state["pending_questions"]:
+            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)  # Update first
+            speak_text(st.session_state["current_question"])  # Then speak
         else:
-            st.session_state["current_question"] = None  # No more questions
-            st.session_state["interview_over"] = True 
+            st.balloons()
+    # if "current_question" in st.session_state:
+    #     if st.session_state.get('pending_questions'):
+    #         st.divider()
+    #         question_col, button_col = st.columns([3, 1])
+
+    #         with question_col:
+    #             st.subheader("Current Question:")
+    #             st.markdown(f"**{st.session_state['current_question']}**")  # Show current question
+            
+    #             if st.session_state.get('listening'):
+    #                 st.info("🎤 Recording your answer...")
+
+    #         with button_col:
+    #             if st.button("Next Question"):
+    #                 next_question()
 
     # Columns for input
     col1, col2 = st.columns(2)
