@@ -26,11 +26,11 @@ tab1, tab2 = st.tabs(["Interview","Viva"])
 
 with tab1:
     def speak_text(text):
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".mp3") as temp_audio:
-            temp_audio_path = temp_audio.name
-        tts = gTTS(text=text, lang="en")
-        tts.save(temp_audio.name)
-        playsound(temp_audio.name) 
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+            temp_audio_path = temp_audio.name  # Store correct file path
+            tts = gTTS(text=text, lang="en")
+            tts.save(temp_audio_path)  # Save generated speech to temp file
+        playsound(temp_audio_path)  # Play the generated speech
         os.remove(temp_audio_path)
 
     # Speech Recognition
@@ -95,26 +95,24 @@ with tab1:
 
     def start_interview():
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
-            # Only set the first question if it hasn't been set
-            if "current_question" not in st.session_state:
-                st.session_state["current_question"] = st.session_state["pending_questions"].pop()
+            if "current_question" not in st.session_state or st.session_state["current_question"] is None:
+                st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)  # FIXED popping order
             
             st.write(f"**Question:** {st.session_state['current_question']}")
-            speak_text(st.session_state["current_question"])
+            
+            
             
 
     def next_question():
-        st.write(f"Pending Questions: {st.session_state['pending_questions']}")
-        if st.session_state["pending_questions"]:
-            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)  # Get the next question
-            st.write(f"**Question:** {st.session_state['current_question']}")
-            speak_text(st.session_state["current_question"])  # Speak the next question
-        else:
-        # If there are no more questions, show balloons and finish
-            st.write("No more questions left.")  # Debugging message
-            st.balloons()  # If no more questions, show balloons
-            st.write("**Interview Completed!**")
-            st.success("You've answered all the questions. Great job!")
+        speak_text(st.session_state["current_question"])
+        if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
+            st.session_state["current_question"] = st.session_state["pending_questions"].pop()
+            if st.session_state["current_question"] == None:
+                st.success("Interview Completed")
+        # else:
+        #     st.session_state["current_question"] = None
+        #     st.success("Interview Completed! 🎈")
+        #     st.balloons()   
 
     # Columns for input
     col1, col2 = st.columns([1, 1])
@@ -173,7 +171,10 @@ with tab1:
 
             with question_col:
                 st.subheader("Current Question:")
-                st.markdown(f"**{st.session_state['current_question']}**")
+                if st.session_state["current_question"]:
+                    st.markdown(f"**{st.session_state['current_question']}**")
+                else:
+                    st.markdown("🎉 No more questions left!")
 
             with button_col:
                 if st.button("Next Question"):
