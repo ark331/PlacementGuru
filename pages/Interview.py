@@ -158,7 +158,7 @@ with tab1:
             in_recorder_factory=in_recorder_factory,
             rtc_configuration={
                 "iceServers": [{"urls": "stun:stun.l.google.com:19302"}],
-                "codecPreferences": ["video/VP8", "audio/opus"]  # Only allow supported codecs
+                "codecPreferences": ["video/H264","video/VP8", "audio/opus"]  # Only allow supported codecs
             },
         )
 
