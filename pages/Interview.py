@@ -26,13 +26,29 @@ tab1, tab2 = st.tabs(["Interview","Viva"])
 
 with tab1:
     def speak_text(text):
+    # Generate speech and save to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
-            temp_audio_path = temp_audio.name  # Store correct file path
+            temp_audio_path = temp_audio.name  
             tts = gTTS(text=text, lang="en")
-            tts.save(temp_audio_path)  # Save generated speech to temp file
-        play(AudioSegment.from_file(temp_audio_path))  # Play the generated speech
+            tts.save(temp_audio_path)
+
+        # Stream the audio to the browser and autoplay
+        with open(temp_audio_path, "rb") as audio_file:
+            audio_bytes = audio_file.read()
+            st.audio(audio_bytes, format="audio/mp3")
+
+        autoplay_audio(temp_audio_path)
         os.remove(temp_audio_path)
 
+    def autoplay_audio(file_path):
+        # Embed HTML5 audio player with autoplay
+        audio_html = f"""
+        <audio autoplay>
+        <source src="{file_path}" type="audio/mp3">
+        Your browser does not support the audio element.
+        </audio>
+        """
+        st.markdown(audio_html, unsafe_allow_html=True)
     # Speech Recognition
     def listen_and_analyze():
         recognizer = sr.Recognizer()
