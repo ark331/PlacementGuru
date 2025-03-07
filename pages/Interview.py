@@ -156,6 +156,7 @@ with tab1:
                 "channelCount": 1}},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
+            rtc_configuration={"iceServers": [{"urls": "stun:stun.l.google.com:19302"}]},
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
