@@ -49,7 +49,7 @@ with tab1:
         except sr.RequestError:
             st.error("Speech recognition request failed.")
 
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    genai.configure(api_key=st.secrets["gemini"]["GEMINI_API_KEY"])
 
     def search_on_gemini(role, company, interviewer_type,company_type,difficulty_level):
         model = genai.GenerativeModel("gemini-1.5-flash")
