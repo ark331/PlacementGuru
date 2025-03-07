@@ -16,6 +16,8 @@ import footer
 from gtts import gTTS
 import tempfile
 from playsound import playsound
+from pydub import AudioSegment
+from pydub.playback import play
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -28,7 +30,7 @@ with tab1:
             temp_audio_path = temp_audio.name  # Store correct file path
             tts = gTTS(text=text, lang="en")
             tts.save(temp_audio_path)  # Save generated speech to temp file
-        playsound(temp_audio_path)  # Play the generated speech
+        play(AudioSegment.from_file(temp_audio_path))  # Play the generated speech
         os.remove(temp_audio_path)
 
     # Speech Recognition
