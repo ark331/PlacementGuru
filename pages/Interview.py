@@ -213,8 +213,8 @@ with tab2:
 
         if st.session_state.get('stream_ended_and_file_saved'):
             st.switch_page('pages/Report.py')
-    with st.sidebar:
-        st.logo("assets\\img.png")
+    # with st.sidebar:
+    #     st.logo("assets\\img.png")
 
     st.divider()
     
