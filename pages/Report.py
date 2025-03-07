@@ -9,7 +9,7 @@ st.set_page_config(page_icon="🧊")
 
 # Load environment variables
 load_dotenv()
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+genai.configure(api_key = st.secrets["gemini"]["GEMINI_API_KEY"])
 
 # Set up the Streamlit app
 st.title('Analysis Report')

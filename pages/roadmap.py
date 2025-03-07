@@ -11,7 +11,7 @@ import ast
 from io import BytesIO
 
 load_dotenv()
-genai.configure(api_key = os.environ["GEMINI_API_KEY"])
+genai.configure(api_key = st.secrets["gemini"]["GEMINI_API_KEY"])
 # st.sidebar.image('0')
 # with st.sidebar:
 #     st.image("assets\\img.png",width=300)
