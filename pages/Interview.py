@@ -145,10 +145,6 @@ with tab1:
             company_type = st.text_input("Company Type")
 
     with col2:
-        def remove_rtx_from_sdp(sdp):
-            return "\n".join(
-                line for line in sdp.split("\n") if "rtx" not in line.lower()
-            )
         webstream = webrtc_streamer(
             key="Start Interview",
             mode=WebRtcMode.SENDRECV,
@@ -165,7 +161,6 @@ with tab1:
             rtc_configuration={
                 "iceServers": [{"urls": "stun:stun.l.google.com:19302"}],
             },
-            on_offer=lambda offer: remove_rtx_from_sdp(offer.sdp),
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
         )
