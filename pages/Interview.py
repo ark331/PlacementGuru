@@ -10,10 +10,8 @@ from pathlib import Path
 import json
 from aiortc.contrib.media import MediaRecorder
 from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode
-import pyttsx3
 import speech_recognition as sr
 import moviepy as mp
-import threading 
 import footer
 from gtts import gTTS
 import tempfile
