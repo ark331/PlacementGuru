@@ -8,6 +8,7 @@ import numpy as np
 import pydub, av, uuid
 from pathlib import Path
 import json
+from aiortc import RTCPeerConnection
 from aiortc.contrib.media import MediaRecorder
 from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode
 import speech_recognition as sr
@@ -21,7 +22,15 @@ from pydub.playback import play
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
+pc = RTCPeerConnection()
 
+@pc.on("signalingstatechange")
+def on_signaling_state_change():
+    for transceiver in pc.getTransceivers():
+        if transceiver.receiver:
+            codec = transceiver.receiver.track.kind
+            if codec == "video/rtx":
+                pc.removeTrack(transceiver.receiver.track)
 tab1, tab2 = st.tabs(["Interview","Viva"])
 
 with tab1:
@@ -121,6 +130,7 @@ with tab1:
 
     def next_question():
         speak_text(st.session_state["current_question"])
+        listen_and_analyze()
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
             st.session_state["current_question"] = st.session_state["pending_questions"].pop()
             if st.session_state["current_question"] == None:
@@ -139,10 +149,10 @@ with tab1:
         with sec1:
             company = st.selectbox('Company', options=('Google', 'Meta', 'Wipro', 'Accenture', 'Other'))
             difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
-            button_click = st.button("Search")
         with sec2:
             interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour', 'Friendly'))
             company_type = st.text_input("Company Type")
+            button_click = st.button("Search")
 
     with col2:
         webstream = webrtc_streamer(
