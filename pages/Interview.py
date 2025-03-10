@@ -24,11 +24,6 @@ rtc_Configuration = RTCConfiguration(
     {
         "iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]},  # Google STUN server
-            {
-                "urls": "turn:relay.metered.ca:80",
-                "username": "webrtc",
-                "credential": "webrtc"
-            }
         ]
     }
 )
