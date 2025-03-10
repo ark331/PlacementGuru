@@ -10,7 +10,7 @@ from pathlib import Path
 import json
 from aiortc import RTCPeerConnection
 from aiortc.contrib.media import MediaRecorder
-from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode
+from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode,RTCConfiguration
 import speech_recognition as sr
 import moviepy as mp
 import footer
@@ -22,7 +22,13 @@ from playsound import playsound
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
-pc = RTCPeerConnection()
+rtc_Configuration = RTCConfiguration(
+    {
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},  # Free Google STUN server
+        ]
+    }
+)
 
 
 tab1, tab2 = st.tabs(["Interview","Viva"])
@@ -160,6 +166,7 @@ with tab1:
                 "channelCount": 1}},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
+            rtc_configurations = rtc_Configuration
         )
 
        
