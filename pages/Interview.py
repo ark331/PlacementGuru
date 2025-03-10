@@ -13,13 +13,13 @@ from pathlib import Path
 import logging
 import google.generativeai as genai
 
-# ✅ Configure Logging
+# Configure Logging
 logging.basicConfig(level=logging.INFO)
 
-# ✅ Set Page Config
+#  Set Page Config
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 
-# ✅ RTC Configuration with STUN & TURN Servers
+# RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
     {
         "iceServers": [
@@ -28,11 +28,11 @@ rtc_Configuration = RTCConfiguration(
     }
 )
 
-# ✅ Set up tabs
+# Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
 with tab1:
-    # 🎤 Text-to-Speech function
+    # Text-to-Speech function
     def speak_text(text):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
             temp_audio_path = temp_audio.name
@@ -45,7 +45,7 @@ with tab1:
         
         os.remove(temp_audio_path)
 
-    # 🎧 Audio listening & analysis
+    # Audio listening & analysis
     def listen_and_analyze():
         recognizer = sr.Recognizer()
         mic = sr.Microphone()
@@ -63,10 +63,10 @@ with tab1:
         except sr.RequestError:
             st.error("Speech recognition request failed.")
 
-    # 🧠 Load Gemini API Key
+    # Load Gemini API Key
     genai.configure(api_key=st.secrets["gemini"]["GEMINI_API_KEY"])
 
-    # 🧠 Fetch interview questions via Gemini
+    # Fetch interview questions via Gemini
     def search_on_gemini(role, company, interviewer_type, company_type, difficulty_level):
         model = genai.GenerativeModel("gemini-1.5-flash")
         prompt = json.load(open("prompts/prompts.json"))
@@ -82,7 +82,7 @@ with tab1:
         results = json.loads(response.text)
         return results
 
-    # ✅ Directory for recordings
+    # Directory for recordings
     RECORD_DIR = Path("records")
     RECORD_DIR.mkdir(exist_ok=True)
 
@@ -94,7 +94,7 @@ with tab1:
     if "stream_ended_and_file_saved" not in st.session_state:
         st.session_state["stream_ended_and_file_saved"] = None
 
-    # 🎯 Convert video to audio
+    # Convert video to audio
     def convert_to_wav():
         ctx = st.session_state.get("Start Interview")
         if ctx:
@@ -112,11 +112,11 @@ with tab1:
                         st.error(f"Error converting video to audio: {e}")
                         st.session_state['stream_ended_and_file_saved'] = False
 
-    # ✅ Handle media recorder for WebRTC
+    # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
         return MediaRecorder(str(in_file), format="mp4")
 
-    # 🚀 Start interview logic
+    # Start interview logic
     def start_interview():
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
             if "current_question" not in st.session_state or st.session_state["current_question"] is None:
@@ -125,7 +125,7 @@ with tab1:
             st.write(f"**Question:** {st.session_state['current_question']}")
             speak_text(st.session_state['current_question'])
 
-    # ⏭️ Handle next question
+    # Handle next question
     def next_question():
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
             st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)
@@ -135,7 +135,7 @@ with tab1:
                 st.success("Interview Completed 🎉")
                 st.balloons()
 
-    # 📩 Input section
+    # Input section
     col1, col2 = st.columns([1, 1])
 
     with col1:
@@ -149,7 +149,7 @@ with tab1:
             company_type = st.text_input("Company Type")
             button_click = st.button("Search")
 
-    # 🎥 WebRTC streamer
+    # WebRTC streamer
     with col2:
         webstream = webrtc_streamer(
             key="Start Interview",
@@ -165,21 +165,30 @@ with tab1:
 
     st.divider()
 
-    # 🚀 Generate questions
+    # Generate questions
     if button_click:
-        with st.spinner(text='Generating Questions...'):
-            if role:
-                result = search_on_gemini(role, company, interviewer_type, company_type, difficulty_level)
-                st.session_state['interview_question'] = result['questions'].copy()
-                st.session_state['pending_questions'] = st.session_state['interview_question']
-                st.subheader(result["topic-title"])
-                for i in result['questions']:
-                    st.markdown(f'- **{i}**')
-                start_interview()
-            else:
-                st.warning("Please enter a role to search.")
+        with st.container(height=300):
+            st.markdown("""
+            <style>
+                div.stSpinner > div{
+                text-align:center;
+                align-items: center;
+                justify-content: center;
+                }
+            </style>""", unsafe_allow_html=True)
+            with st.spinner(text='Generating Questions...'):
+                if role:
+                    result = search_on_gemini(role, company, interviewer_type, company_type, difficulty_level)
+                    st.session_state['interview_question'] = result['questions'].copy()
+                    st.session_state['pending_questions'] = st.session_state['interview_question']
+                    st.subheader(result["topic-title"])
+                    for i in result['questions']:
+                        st.markdown(f'- **{i}**')
+                    start_interview()
+                else:
+                    st.warning("Please enter a role to search.")
 
-    # ⏩ Show current question
+    # Show current question
     if "current_question" in st.session_state and st.session_state["current_question"]:
         st.divider()
         question_col, button_col = st.columns([3, 1])
