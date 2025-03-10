@@ -17,16 +17,8 @@ import footer
 from gtts import gTTS
 import tempfile
 from playsound import playsound
-import asyncio
 
 
-def run_async(func):
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(func())
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -179,11 +171,6 @@ with tab1:
         rtc_configuration={
             "iceServers": [
                 {"urls": "stun:stun.l.google.com:19302"},
-                {
-                    "urls": "turn:relay.metered.ca:80",
-                    "username": "user",
-                    "credential": "password",
-                },
             ]
         },
     )
@@ -235,8 +222,6 @@ with tab1:
                     next_question()
 
 
-if st.button("Start Interview"):
-    run_async(start_interview)
      
 
 
