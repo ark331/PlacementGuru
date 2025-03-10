@@ -130,7 +130,6 @@ with tab1:
 
     def next_question():
         speak_text(st.session_state["current_question"])
-        listen_and_analyze()
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
             st.session_state["current_question"] = st.session_state["pending_questions"].pop()
             if st.session_state["current_question"] == None:
