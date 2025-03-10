@@ -150,34 +150,21 @@ with tab1:
 
     with col2:
         webstream = webrtc_streamer(
-        key="Start Interview",
-        mode=WebRtcMode.SENDRECV,
-        media_stream_constraints={
-            'video': {'width': 960, 'height': 440},
-            "audio": {
+            key="Start Interview",
+            mode=WebRtcMode.SENDRECV,
+            media_stream_constraints={'video': {'width': 960, 'height': 440}, "audio": {
                 "sampleRate": 16000,
                 "sampleSize": 16,
-                "echoCancellation": True,
+                'echoCancellation': True,
                 "noiseSuppression": True,
-                "channelCount": 1
-            }
-        },
-        rtc_configuration={
-            "iceServers": [
-                {"urls": "stun:stun.l.google.com:19302"},
-                {
-                    "urls": "turn:relay1.expressturn.com:3478",
-                    "username": "efreshet",
-                    "credential": "efreshet",
-                }
-            ]
-        },
-        async_processing=True,
-    )
+                "channelCount": 1}},
+            on_change=convert_to_wav,
+            in_recorder_factory=in_recorder_factory,
+        )
 
        
-    if st.session_state.get('stream_ended_and_file_saved'):
-            st.switch_page('pages/Report.py')
+        if st.session_state.get('stream_ended_and_file_saved'):
+                st.switch_page('pages/Report.py')
     
 
     st.divider()
