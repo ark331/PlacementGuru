@@ -51,7 +51,6 @@ def send_email(user_name, user_email, user_message):
 with st.form("contact_form"):
     name = st.text_input("Name",max_chars=100)
     email = st.text_input("Email")
-    # phone_number = st.number_input("Phone Number")
     message = st.text_area("Message")
     button = st.form_submit_button("Submit")
     
