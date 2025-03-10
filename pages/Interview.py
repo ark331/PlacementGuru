@@ -175,10 +175,7 @@ with tab1:
         async_processing=True,
     )
 
-    if webstream.state.playing:
-        st.success("Webcam streaming started successfully!")
-    else:
-        st.warning("WebRTC failed to connect! Try refreshing the page.")        
+       
     if st.session_state.get('stream_ended_and_file_saved'):
             st.switch_page('pages/Report.py')
     
