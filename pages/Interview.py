@@ -1,64 +1,56 @@
-import os, time
 import streamlit as st
-import google.generativeai as genai
-from dotenv import load_dotenv
-import matplotlib.pyplot as plt
-import moviepy as me
-import numpy as np
-import pydub, av, uuid
-from pathlib import Path
-import json
-from aiortc import RTCPeerConnection
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 from aiortc.contrib.media import MediaRecorder
-from streamlit_webrtc import VideoHTMLAttributes, webrtc_streamer, WebRtcMode,RTCConfiguration
+from gtts import gTTS
 import speech_recognition as sr
 import moviepy as mp
-import footer
-from gtts import gTTS
 import tempfile
-from playsound import playsound
+import os
+import json
+import uuid
+import time
+from pathlib import Path
+import logging
+import google.generativeai as genai
 
+# ✅ Configure Logging
+logging.basicConfig(level=logging.INFO)
 
-
-load_dotenv()
+# ✅ Set Page Config
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
+
+# ✅ RTC Configuration with STUN & TURN Servers
 rtc_Configuration = RTCConfiguration(
     {
         "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},  # Free Google STUN server
+            {"urls": ["stun:stun.l.google.com:19302"]},  # Google STUN server
+            {
+                "urls": "turn:relay.metered.ca:80",
+                "username": "webrtc",
+                "credential": "webrtc"
+            }
         ]
     }
 )
 
-
-tab1, tab2 = st.tabs(["Interview","Viva"])
+# ✅ Set up tabs
+tab1, tab2 = st.tabs(["Interview", "Viva"])
 
 with tab1:
+    # 🎤 Text-to-Speech function
     def speak_text(text):
-    # Generate speech and save to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
-            temp_audio_path = temp_audio.name  
+            temp_audio_path = temp_audio.name
             tts = gTTS(text=text, lang="en")
             tts.save(temp_audio_path)
 
-        # Stream the audio to the browser and autoplay
         with open(temp_audio_path, "rb") as audio_file:
             audio_bytes = audio_file.read()
             st.audio(audio_bytes, format="audio/mp3")
-
-        autoplay_audio(temp_audio_path)
+        
         os.remove(temp_audio_path)
 
-    def autoplay_audio(file_path):
-        # Embed HTML5 audio player with autoplay
-        audio_html = f"""
-        <audio autoplay>
-        <source src="{file_path}" type="audio/mp3">
-        Your browser does not support the audio element.
-        </audio>
-        """
-        st.markdown(audio_html, unsafe_allow_html=True)
-    # Speech Recognition
+    # 🎧 Audio listening & analysis
     def listen_and_analyze():
         recognizer = sr.Recognizer()
         mic = sr.Microphone()
@@ -76,17 +68,26 @@ with tab1:
         except sr.RequestError:
             st.error("Speech recognition request failed.")
 
+    # 🧠 Load Gemini API Key
     genai.configure(api_key=st.secrets["gemini"]["GEMINI_API_KEY"])
 
-    def search_on_gemini(role, company, interviewer_type,company_type,difficulty_level):
+    # 🧠 Fetch interview questions via Gemini
+    def search_on_gemini(role, company, interviewer_type, company_type, difficulty_level):
         model = genai.GenerativeModel("gemini-1.5-flash")
         prompt = json.load(open("prompts/prompts.json"))
-        response = model.generate_content(prompt.get('interviewer').format(role=role, company=company, interviewer_type=interviewer_type, difficulty_level=difficulty_level,company_type=company_type))
+        response = model.generate_content(
+            prompt.get('interviewer').format(
+                role=role,
+                company=company,
+                interviewer_type=interviewer_type,
+                difficulty_level=difficulty_level,
+                company_type=company_type
+            )
+        )
         results = json.loads(response.text)
         return results
 
-    st.title("PlacementGuru")
-
+    # ✅ Directory for recordings
     RECORD_DIR = Path("records")
     RECORD_DIR.mkdir(exist_ok=True)
 
@@ -98,6 +99,7 @@ with tab1:
     if "stream_ended_and_file_saved" not in st.session_state:
         st.session_state["stream_ended_and_file_saved"] = None
 
+    # 🎯 Convert video to audio
     def convert_to_wav():
         ctx = st.session_state.get("Start Interview")
         if ctx:
@@ -109,41 +111,40 @@ with tab1:
                     try:
                         video = mp.VideoFileClip(str(in_file))
                         video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
-                        st.session_state['audio_file_path'] = str(output_wav)  # Store path
+                        st.session_state['audio_file_path'] = str(output_wav)
                         st.session_state['stream_ended_and_file_saved'] = True
                     except Exception as e:
                         st.error(f"Error converting video to audio: {e}")
                         st.session_state['stream_ended_and_file_saved'] = False
 
+    # ✅ Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
         return MediaRecorder(str(in_file), format="mp4")
 
+    # 🚀 Start interview logic
     def start_interview():
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
             if "current_question" not in st.session_state or st.session_state["current_question"] is None:
-                st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)  # FIXED popping order
+                st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)
             
             st.write(f"**Question:** {st.session_state['current_question']}")
-            
-            
-            
+            speak_text(st.session_state['current_question'])
 
+    # ⏭️ Handle next question
     def next_question():
-        speak_text(st.session_state["current_question"])
         if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
-            st.session_state["current_question"] = st.session_state["pending_questions"].pop()
-            if st.session_state["current_question"] == None:
-                st.success("Interview Completed")
-        # else:
-        #     st.session_state["current_question"] = None
-        #     st.success("Interview Completed! 🎈")
-        #     st.balloons()   
+            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)
+            if st.session_state["current_question"]:
+                speak_text(st.session_state["current_question"])
+            else:
+                st.success("Interview Completed 🎉")
+                st.balloons()
 
-    # Columns for input
+    # 📩 Input section
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        role = st.text_input('Role', placeholder='What role are you seeking for!')
+        role = st.text_input('Role', placeholder='What role are you seeking?')
         sec1, sec2 = st.columns(2)
         with sec1:
             company = st.selectbox('Company', options=('Google', 'Meta', 'Wipro', 'Accenture', 'Other'))
@@ -153,60 +154,48 @@ with tab1:
             company_type = st.text_input("Company Type")
             button_click = st.button("Search")
 
+    # 🎥 WebRTC streamer
     with col2:
         webstream = webrtc_streamer(
             key="Start Interview",
             mode=WebRtcMode.SENDRECV,
-            media_stream_constraints={'video': {'width': 960, 'height': 440}, "audio": {
-                "sampleRate": 16000,
-                "sampleSize": 16,
-                'echoCancellation': True,
-                "noiseSuppression": True,
-                "channelCount": 1}},
+            media_stream_constraints={'video': {'width': 960, 'height': 440}, "audio": True},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            rtc_configuration = rtc_Configuration
+            rtc_configuration=rtc_Configuration
         )
 
-       
         if st.session_state.get('stream_ended_and_file_saved'):
-                st.switch_page('pages/Report.py')
-    
+            st.switch_page('pages/Report.py')
 
     st.divider()
 
+    # 🚀 Generate questions
     if button_click:
-        with st.container():
-            st.markdown("""<style> div.stSpinner > div { text-align: center; align-items: center; justify-content: center; } </style>""", unsafe_allow_html=True)
+        with st.spinner(text='Generating Questions...'):
+            if role:
+                result = search_on_gemini(role, company, interviewer_type, company_type, difficulty_level)
+                st.session_state['interview_question'] = result['questions'].copy()
+                st.session_state['pending_questions'] = st.session_state['interview_question']
+                st.subheader(result["topic-title"])
+                for i in result['questions']:
+                    st.markdown(f'- **{i}**')
+                start_interview()
+            else:
+                st.warning("Please enter a role to search.")
 
-            with st.spinner(text='Generating Questions...'):
-                if role:
-                    result = search_on_gemini(role, company, interviewer_type,difficulty_level,company_type)
-                    st.session_state['interview_question'] = result['questions'].copy()
-                    st.session_state['pending_questions'] = st.session_state['interview_question'][::-1]
-                    st.subheader(result["topic-title"])
-                    for i in result['questions']:
-                        st.markdown(f'-  **{i}**')
-                    start_interview()
-                else:
-                    st.warning("Please enter a role to search.")
+    # ⏩ Show current question
+    if "current_question" in st.session_state and st.session_state["current_question"]:
+        st.divider()
+        question_col, button_col = st.columns([3, 1])
 
-    if "current_question" in st.session_state:
-        if st.session_state.get('pending_questions'):
-            st.divider()
-            question_col, button_col = st.columns([3, 1])
+        with question_col:
+            st.subheader("Current Question:")
+            st.markdown(f"**{st.session_state['current_question']}**")
 
-            with question_col:
-                st.subheader("Current Question:")
-                if st.session_state["current_question"]:
-                    st.markdown(f"**{st.session_state['current_question']}**")
-                else:
-                    st.markdown("🎉 No more questions left!")
-
-            with button_col:
-                if st.button("Next Question"):
-                    next_question()
-
+        with button_col:
+            if st.button("Next Question"):
+                next_question()
 
      
 
