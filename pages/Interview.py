@@ -166,7 +166,7 @@ with tab1:
                 "channelCount": 1}},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            rtc_configurations = rtc_Configuration
+            rtc_configuration = rtc_Configuration
         )
 
        
