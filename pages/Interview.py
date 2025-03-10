@@ -24,13 +24,7 @@ load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 pc = RTCPeerConnection()
 
-@pc.on("signalingstatechange")
-def on_signaling_state_change():
-    for transceiver in pc.getTransceivers():
-        if transceiver.receiver:
-            codec = transceiver.receiver.track.kind
-            if codec == "video/rtx":
-                pc.removeTrack(transceiver.receiver.track)
+
 tab1, tab2 = st.tabs(["Interview","Viva"])
 
 with tab1:
