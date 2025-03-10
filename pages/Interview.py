@@ -157,27 +157,29 @@ with tab1:
             "audio": {
                 "sampleRate": 16000,
                 "sampleSize": 16,
-                'echoCancellation': True,
+                "echoCancellation": True,
                 "noiseSuppression": True,
-                "channelCount": 1,
+                "channelCount": 1
             }
         },
         rtc_configuration={
             "iceServers": [
                 {"urls": "stun:stun.l.google.com:19302"},
+                {
+                    "urls": "turn:relay1.expressturn.com:3478",
+                    "username": "efreshet",
+                    "credential": "efreshet",
+                }
             ]
         },
+        async_processing=True,
     )
 
-    if webstream and webstream.state.playing:
-        pc = webstream.peer_connection
-
-        @pc.on("connectionstatechange")
-        def on_connection_state_change():
-            if pc.connectionState == "failed":
-                st.error("WebRTC connection failed. Please refresh the page.")
-                pc.close()
-        if st.session_state.get('stream_ended_and_file_saved'):
+    if webstream.state.playing:
+        st.success("Webcam streaming started successfully!")
+    else:
+        st.warning("WebRTC failed to connect! Try refreshing the page.")        
+    if st.session_state.get('stream_ended_and_file_saved'):
             st.switch_page('pages/Report.py')
     
 
