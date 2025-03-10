@@ -9,9 +9,9 @@ import re
 from email_validator import validate_email,EmailNotValidError
 
 load_dotenv()
-EMAIL_SENDER = os.getenv("EMAIL_SENDER")  
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")  
-EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER") 
+EMAIL_SENDER = st.secrets["email"]["user"]  
+EMAIL_PASSWORD = st.secrets["email"]["password"] 
+EMAIL_RECEIVER = st.secrets["email"]["receiver"] 
 
 st.set_page_config(page_title='PlacementGuru', layout='wide')
 def clear_form():
