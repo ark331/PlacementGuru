@@ -17,8 +17,16 @@ import footer
 from gtts import gTTS
 import tempfile
 from playsound import playsound
-from pydub import AudioSegment
-from pydub.playback import play
+import asyncio
+
+
+def run_async(func):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(func())
 
 load_dotenv()
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -156,24 +164,38 @@ with tab1:
 
     with col2:
         webstream = webrtc_streamer(
-            key="Start Interview",
-            mode=WebRtcMode.SENDRECV,
-            media_stream_constraints={
-                'video': {'width': 960, 'height': 440},
-                "audio": {
-                    "sampleRate": 16000,
-                    "sampleSize": 16,
-                    'echoCancellation': True,
-                    "noiseSuppression": True,
-                    "channelCount": 1
-                }
-            },
-            rtc_configuration={
-                "iceServers": [{"urls": "stun:stun.l.google.com:19302"}],
-            },
-            on_change=convert_to_wav,
-            in_recorder_factory=in_recorder_factory,
-        )
+        key="Start Interview",
+        mode=WebRtcMode.SENDRECV,
+        media_stream_constraints={
+            'video': {'width': 960, 'height': 440},
+            "audio": {
+                "sampleRate": 16000,
+                "sampleSize": 16,
+                'echoCancellation': True,
+                "noiseSuppression": True,
+                "channelCount": 1,
+            }
+        },
+        rtc_configuration={
+            "iceServers": [
+                {"urls": "stun:stun.l.google.com:19302"},
+                {
+                    "urls": "turn:relay.metered.ca:80",
+                    "username": "user",
+                    "credential": "password",
+                },
+            ]
+        },
+    )
+
+    if webstream and webstream.state.playing:
+        pc = webstream.peer_connection
+
+        @pc.on("connectionstatechange")
+        def on_connection_state_change():
+            if pc.connectionState == "failed":
+                st.error("WebRTC connection failed. Please refresh the page.")
+                pc.close()
         if st.session_state.get('stream_ended_and_file_saved'):
             st.switch_page('pages/Report.py')
     
@@ -213,7 +235,8 @@ with tab1:
                     next_question()
 
 
-
+if st.button("Start Interview"):
+    run_async(start_interview)
      
 
 
