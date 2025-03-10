@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 import logging
 import google.generativeai as genai
+from transformers import pipeline
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,8 @@ rtc_Configuration = RTCConfiguration(
     }
 )
 
+#Initializing GPT model
+generator = pipeline("text-generation",model="gpt2")
 # Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
@@ -67,21 +70,18 @@ with tab1:
     genai.configure(api_key=st.secrets["gemini"]["GEMINI_API_KEY"])
 
     # Fetch interview questions via Gemini
-    def search_on_gemini(role, company, interviewer_type, company_type, difficulty_level):
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        prompt = json.load(open("prompts/prompts.json"))
-        response = model.generate_content(
-            prompt.get('interviewer').format(
-                role=role,
-                company=company,
-                interviewer_type=interviewer_type,
-                difficulty_level=difficulty_level,
-                company_type=company_type
-            )
-        )
-        results = json.loads(response.text)
-        return results
+    def search_with_gpt2(role, company, interviewer_type, company_type, difficulty_level):
+        prompt = f"You are a {interviewer_type} interviewer at {company}. Ask {difficulty_level} level interview questions for a {role} role in a {company_type} company."
 
+        response = generator(prompt, max_length=300, num_return_sequences=1)
+        questions_text = response[0]['generated_text'].split("\n")
+
+        # Simulate the result format
+        result = {
+            "topic-title": f"{role} Interview Questions",
+            "questions": [q.strip() for q in questions_text if q.strip()]
+        }
+        return result
     # Directory for recordings
     RECORD_DIR = Path("records")
     RECORD_DIR.mkdir(exist_ok=True)
@@ -178,7 +178,7 @@ with tab1:
             </style>""", unsafe_allow_html=True)
             with st.spinner(text='Generating Questions...'):
                 if role:
-                    result = search_on_gemini(role, company, interviewer_type, company_type, difficulty_level)
+                    result = search_with_gpt2(role, company, interviewer_type, company_type, difficulty_level)
                     st.session_state['interview_question'] = result['questions'].copy()
                     st.session_state['pending_questions'] = st.session_state['interview_question']
                     st.subheader(result["topic-title"])
