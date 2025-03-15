@@ -64,7 +64,7 @@ rpds-py==0.20.0
 rsa==4.9
 six==1.16.0
 smmap==5.0.1
-streamlit==1.39.0
+streamlit==1.38.0
 streamlit-webrtc==0.48.1
 tenacity==8.5.0
 toml==0.10.2
