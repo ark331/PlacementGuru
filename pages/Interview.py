@@ -22,7 +22,7 @@ def on_signaling_state_change():
     for transceiver in pc.getTransceivers():
         if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
             pc.removeTrack(transceiver.receiver.track)
-            
+
 @pc.on("track")
 def on_track(track):
     if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
@@ -34,11 +34,12 @@ st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 # RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
     {
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
-                       {"urls": ["stun:stun1.l.google.com:19302"]},
-                    {"urls": ["stun:stun2.l.google.com:19302"]},
-                    {"urls": ["stun:stun3.l.google.com:19302"]},
-                    {"urls": ["stun:stun4.l.google.com:19302"]},
+        "iceServers": [ {"urls": ["stun:stun.l.google.com:19302"]},
+                        {"urls": ["stun.altar.com.pl:3478"]},
+                        {"urls": ["stun.aeta.com:3478"]},
+                        {"urls": ["stun:stun3.l.google.com:5349"]},
+                        {"urls": ["stun:stun4.l.google.com:19302"]},
+                        {"urls": ["stun:stun4.l.google.com:5349"]}
                     
                        ],
             "iceTransportPolicy": "all",
