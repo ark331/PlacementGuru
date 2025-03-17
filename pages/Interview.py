@@ -29,7 +29,13 @@ st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 # RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
     {
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}],
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
+                       {"urls": ["stun:stun1.l.google.com:19302"]},
+                        {"urls": ["stun:stun2.l.google.com:19302"]},
+                        {"urls": ["stun:stun3.l.google.com:19302"]},
+                        {"urls": ["stun:stun4.l.google.com:19302"]},
+                        {"urls": ["stun:global.stun.twilio.com:3478?transport=udp"]}
+                       ],
             "iceTransportPolicy": "all",
             "bundlePolicy": "max-bundle",
             "rtcpMuxPolicy": "require",
