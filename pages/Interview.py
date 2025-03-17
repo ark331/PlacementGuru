@@ -169,13 +169,19 @@ with tab1:
             key="Start Interview",
             mode=WebRtcMode.SENDRECV,
             media_stream_constraints={
-                'video':{
+                "video":{
                     "width":960,
                     "height":440,
                     "frameRate":30,
                     "optional":[{"codec":"VP8"},{"codec":"H234"}]
                 },
-                "audio":True
+                "audio":{
+                    "sampleRate": 16000,
+                    "sampleSize": 16,
+                    "echoCancellation": True,
+                    "noiseSuppression": True,
+                    "channelCount": 1
+                }
                 
             },
             on_change=convert_to_wav,
