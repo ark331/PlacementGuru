@@ -12,9 +12,15 @@ import time
 from pathlib import Path
 import logging
 import google.generativeai as genai
+from aiortc import RTCPeerConnection
 
-# Configure Logging
-logging.basicConfig(level=logging.INFO)
+pc = RTCPeerConnection()
+
+@pc.on("signalingstatechange")
+def on_signaling_state_change():
+    for transceiver in pc.getTransceivers():
+        if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
+            pc.removeTrack(transceiver.receiver.track)
 
 #  Set Page Config
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
