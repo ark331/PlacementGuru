@@ -172,8 +172,8 @@ with tab1:
                 "video":{
                     "width":960,
                     "height":440,
-                    "frameRate":30,
-                    "optional":[{"codec":"VP8"},{"codec":"H234"}]
+                    "frameRate":30
+                    # "optional":[{"codec":"VP8"},{"codec":"H234"}]
                 },
                 "audio":{
                     "sampleRate": 16000,
