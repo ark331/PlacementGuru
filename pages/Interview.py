@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 import logging
 import google.generativeai as genai
-from aiortc import RTCPeerConnection
+from aiortc import RTCPeerConnection,RTCRtpReceiver
 
 pc = RTCPeerConnection()
 
@@ -21,6 +21,10 @@ def on_signaling_state_change():
     for transceiver in pc.getTransceivers():
         if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
             pc.removeTrack(transceiver.receiver.track)
+
+RTCRtpReceiver.supported_codecs = [
+    codec for codec in RTCRtpReceiver.supported_codecs if codec.mimeType != "video/rtx"
+]
 
 #  Set Page Config
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
@@ -163,7 +167,16 @@ with tab1:
         webstream = webrtc_streamer(
             key="Start Interview",
             mode=WebRtcMode.SENDRECV,
-            media_stream_constraints={'video': {'width': 960, 'height': 440}, "audio": True},
+            media_stream_constraints={
+                'video':{
+                    "width":960,
+                    "height":440,
+                    "frameRate":30,
+                    "optional":[{"codec":"VP8"},{"codec":"H234"}]
+                },
+                "audio":True
+                
+            },
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
             rtc_configuration=rtc_Configuration
