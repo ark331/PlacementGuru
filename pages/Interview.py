@@ -22,9 +22,12 @@ st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 # RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
     {
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},  # Google STUN server
-        ]
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}],
+            "iceTransportPolicy": "all",
+            "bundlePolicy": "max-bundle",
+            "rtcpMuxPolicy": "require",
+            "sdpSemantics": "unified-plan",  
+        
     }
 )
 
