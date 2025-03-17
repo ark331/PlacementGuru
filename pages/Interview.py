@@ -120,7 +120,8 @@ with tab1:
                     try:
                         video = mp.VideoFileClip(str(in_file))
                         video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
-                        st.session_state['audio_file_path'] = str(output_wav)
+                        if "audio_file_path" not in st.session_state:
+                            st.session_state["audio_file_path"] = str(output_wav)            
                         st.session_state['stream_ended_and_file_saved'] = True
                     except Exception as e:
                         st.error(f"Error converting video to audio: {e}")
