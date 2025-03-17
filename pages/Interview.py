@@ -17,7 +17,12 @@ from aiortc import RTCPeerConnection,RTCRtpReceiver
 pc = RTCPeerConnection()
 
 
-
+@pc.on("signalingstatechange")
+def on_signaling_state_change():
+    for transceiver in pc.getTransceivers():
+        if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
+            pc.removeTrack(transceiver.receiver.track)
+            
 @pc.on("track")
 def on_track(track):
     if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
@@ -31,10 +36,10 @@ rtc_Configuration = RTCConfiguration(
     {
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]},
                        {"urls": ["stun:stun1.l.google.com:19302"]},
-                        {"urls": ["stun:stun2.l.google.com:19302"]},
-                        {"urls": ["stun:stun3.l.google.com:19302"]},
-                        {"urls": ["stun:stun4.l.google.com:19302"]},
-                        
+                    {"urls": ["stun:stun2.l.google.com:19302"]},
+                    {"urls": ["stun:stun3.l.google.com:19302"]},
+                    {"urls": ["stun:stun4.l.google.com:19302"]},
+                    
                        ],
             "iceTransportPolicy": "all",
             "bundlePolicy": "max-bundle",
