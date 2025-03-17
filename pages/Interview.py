@@ -22,9 +22,10 @@ def on_signaling_state_change():
         if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
             pc.removeTrack(transceiver.receiver.track)
 
-RTCRtpReceiver.supported_codecs = [
-    codec for codec in RTCRtpReceiver.supported_codecs if codec.mimeType != "video/rtx"
-]
+@pc.on("track")
+def on_track(track):
+    if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
+        pc.removeTrack(track)
 
 #  Set Page Config
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
