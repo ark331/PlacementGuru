@@ -35,7 +35,6 @@ st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 rtc_Configuration = RTCConfiguration(
     {
         "iceServers": [ {"urls": ["stun:stun.l.google.com:19302"]},
-                        {"urls": ["stun.altar.com.pl:3478"]},
                         {"urls": ["stun.aeta.com:3478"]},
                         {"urls": ["stun:stun3.l.google.com:5349"]},
                         {"urls": ["stun:stun4.l.google.com:19302"]},
