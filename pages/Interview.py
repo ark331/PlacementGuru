@@ -124,17 +124,34 @@ with tab1:
                     time.sleep(1)
                     output_wav = RECORD_DIR / f"{prefix}_output.wav"
                     try:
-                        video = mp.VideoFileClip(str(in_file))
-                        video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
+                        # Use subprocess instead of moviepy for more reliable conversion
+                        subprocess.run(
+                            ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
+                            check=True,
+                            capture_output=True
+                        )
                         st.session_state['audio_file_path'] = str(output_wav)         
                         st.session_state['stream_ended_and_file_saved'] = True
                     except Exception as e:
                         st.error(f"Error converting video to audio: {e}")
                         st.session_state['stream_ended_and_file_saved'] = False
+                        logging.error(f"Audio conversion error: {str(e)}")
 
     # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
         return MediaRecorder(str(in_file), format="mp4")
+
+    # Safely redirect to report page
+    def redirect_to_report():
+        try:
+            if st.session_state.get('audio_file_path') and os.path.exists(st.session_state['audio_file_path']):
+                st.switch_page('pages/Report.py')
+            else:
+                st.error("Audio file not found. Please try again.")
+                st.session_state['stream_ended_and_file_saved'] = False
+        except Exception as e:
+            st.error(f"Error redirecting to report: {str(e)}")
+            logging.error(f"Redirect error: {str(e)}")
 
     # Start interview logic
     def start_interview():
@@ -179,7 +196,6 @@ with tab1:
                     "width":960,
                     "height":440,
                     "frameRate":30
-                    # "optional":[{"codec":"VP8"},{"codec":"H234"}]
                 },
                 "audio":{
                     "sampleRate": 16000,
@@ -196,7 +212,7 @@ with tab1:
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
-            st.switch_page('pages/Report.py')
+            redirect_to_report()
 
     st.divider()
 
@@ -265,10 +281,11 @@ with tab2:
                 "channelCount": 1}},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
+            rtc_configuration=rtc_Configuration
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
-            st.switch_page('pages/Report.py')
+            redirect_to_report()
     # with st.sidebar:
     #     st.logo("assets\\img.png")
 
