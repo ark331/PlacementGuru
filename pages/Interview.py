@@ -120,25 +120,17 @@ with tab1:
         if ctx:
             state = ctx.state
             if not state.playing and not state.signalling:
-                if in_file.exists() and in_file.stat().st_size > 1000:  # Ensure file is valid
+                if in_file.exists():
                     time.sleep(1)
                     output_wav = RECORD_DIR / f"{prefix}_output.wav"
                     try:
-                        # Convert video to audio using FFmpeg subprocess (avoids RAM overload)
-                        command = [
-                            "ffmpeg", "-i", str(in_file),
-                            "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2",
-                            str(output_wav)
-                        ]
-                        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+                        video = mp.VideoFileClip(str(in_file))
+                        video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
                         st.session_state['audio_file_path'] = str(output_wav)         
                         st.session_state['stream_ended_and_file_saved'] = True
-                    except subprocess.CalledProcessError as e:
-                        st.error(f"FFmpeg error: {e.stderr.decode()}")
+                    except Exception as e:
+                        st.error(f"Error converting video to audio: {e}")
                         st.session_state['stream_ended_and_file_saved'] = False
-                else:
-                    st.error("The recorded video file is missing or empty.")
 
     # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
