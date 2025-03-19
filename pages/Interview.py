@@ -124,12 +124,23 @@ with tab1:
                     time.sleep(1)
                     output_wav = RECORD_DIR / f"{prefix}_output.wav"
                     try:
+                        # Ensure FFmpeg is properly set
+                        
                         video = mp.VideoFileClip(str(in_file))
+                        
+                        if video.audio is None:
+                            st.error("No audio track found in the video.")
+                            return
+                        
                         video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
                         st.session_state['audio_file_path'] = str(output_wav)         
                         st.session_state['stream_ended_and_file_saved'] = True
+                    except OSError as e:
+                        st.error("FFmpeg might be missing or the video format is unsupported.")
+                        st.error(f"Error: {e}")
+                        st.session_state['stream_ended_and_file_saved'] = False
                     except Exception as e:
-                        st.error(f"Error converting video to audio: {e}")
+                        st.error(f"Unexpected error while converting video: {e}")
                         st.session_state['stream_ended_and_file_saved'] = False
 
     # Handle media recorder for WebRTC
