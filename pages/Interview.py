@@ -35,7 +35,7 @@ def on_track(track):
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 
 # RTC Configuration with STUN
-frontend_rtc_configuration = RTCConfiguration(
+rtc_Configuration = RTCConfiguration(
     {
         "iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]},
@@ -51,7 +51,7 @@ frontend_rtc_configuration = RTCConfiguration(
     }
 )
 
-server_rtc_configuration = frontend_rtc_configuration
+
 # Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
@@ -225,8 +225,7 @@ with tab1:
             },
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            frontend_rtc_configuration=frontend_rtc_configuration,
-            server_rtc_configuration=server_rtc_configuration
+            rtc_configuration=rtc_Configuration
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
@@ -299,8 +298,7 @@ with tab2:
                 "channelCount": 1}},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            frontend_rtc_configuration=frontend_rtc_configuration,
-            server_rtc_configuration=server_rtc_configuration
+            rtc_configuration=rtc_Configuration
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
