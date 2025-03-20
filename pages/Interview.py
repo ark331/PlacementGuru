@@ -104,41 +104,47 @@ with tab1:
         return results
 
     # Directory for recordings
-    RECORD_DIR = Path("records")
-    RECORD_DIR.mkdir(exist_ok=True)
-
-    if "prefix" not in st.session_state:
-        st.session_state["prefix"] = str(uuid.uuid4())
-    prefix = st.session_state["prefix"]
-    in_file = RECORD_DIR / f"{prefix}_input.mp4"
+    # Create a temp video file
+    temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    in_file = Path(temp_video.name)
 
     if "stream_ended_and_file_saved" not in st.session_state:
         st.session_state["stream_ended_and_file_saved"] = None
 
-    # Convert video to audio
+    # Convert video to audio (Temp File)
     def convert_to_wav():
         ctx = st.session_state.get("Start Interview")
         if ctx:
             state = ctx.state
             if not state.playing and not state.signalling:
-                if in_file.exists() and in_file.stat().st_size > 1000:  # Ensure file is valid
+                if in_file.exists() and in_file.stat().st_size > 1000:  # Ensure valid file
                     time.sleep(1)
-                    output_wav = RECORD_DIR / f"{prefix}_output.wav"
+
+                    # Create a temp audio file
+                    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+                    output_wav = Path(temp_audio.name)
+
                     try:
-                        # Use subprocess instead of moviepy for more reliable conversion
+                        # Convert Video to Audio using FFmpeg
                         subprocess.run(
                             ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
                             check=True,
                             capture_output=True
                         )
-                        st.session_state['audio_file_path'] = str(output_wav)         
+                        
+                        # Store only the necessary output path
+                        st.session_state['audio_file_path'] = str(output_wav)
                         st.session_state['stream_ended_and_file_saved'] = True
+
+                        # Delete video file (Not needed after conversion)
+                        os.remove(in_file)
+
                     except subprocess.CalledProcessError as e:
                         st.error(f"FFmpeg error: {e.stderr.decode()}")
                         st.session_state['stream_ended_and_file_saved'] = False
                         logging.error(f"Audio conversion error: {str(e)}")
 
-    # Handle media recorder for WebRTC
+    # Handle media recorder for WebRTC (Temp File)
     def in_recorder_factory() -> MediaRecorder:
         return MediaRecorder(str(in_file), format="mp4")
 
