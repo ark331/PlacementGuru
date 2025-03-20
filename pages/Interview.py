@@ -299,7 +299,8 @@ with tab2:
                 "channelCount": 1}},
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            rtc_configuration=rtc_Configuration
+            frontend_rtc_configuration=frontend_rtc_configuration,
+            server_rtc_configuration=server_rtc_configuration
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
