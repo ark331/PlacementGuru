@@ -43,7 +43,8 @@ rtc_Configuration = RTCConfiguration(
             "iceTransportPolicy": "all",
             "bundlePolicy": "max-bundle",
             "rtcpMuxPolicy": "require",
-            "sdpSemantics": "unified-plan",  
+            "sdpSemantics": "unified-plan", 
+            "codecPreferences": ["video/H264", "video/VP8"] 
         
     }
 )
@@ -208,7 +209,8 @@ with tab1:
             },
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            rtc_configuration=rtc_Configuration
+            rtc_configuration=rtc_Configuration,
+
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
