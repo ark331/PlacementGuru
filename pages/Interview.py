@@ -158,9 +158,7 @@ with tab1:
 
     # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
-        temp_dir = tempfile.mkdtemp()  # Create a temporary directory
-        temp_file = Path(temp_dir) / "recorded_video.mp4"  # Define temp file path
-        return MediaRecorder(str(temp_file), format="mp4")
+        return MediaRecorder(str(in_file), format="mp4")
 
     # Safely redirect to report page
     def redirect_to_report():
