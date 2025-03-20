@@ -26,7 +26,7 @@ def get_gemini_suggestions(transcript):
     prompt = (
         f"Give me suggestions on how to avoid using filler words like from {transcript} 'you know' during a conversation in an interview in 5-6 lines."
     )
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     response = model.generate_content(prompt)
     return response.text.strip() if response else "No suggestions found."
 
