@@ -228,7 +228,7 @@ with tab1:
             rtc_configuration=rtc_Configuration
         )
 
-        if st.session_state.get('stream_ended_and_file_saved'):
+    if st.session_state.get('stream_ended_and_file_saved'):
             redirect_to_report()
 
     st.divider()
