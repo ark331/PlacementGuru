@@ -209,7 +209,7 @@ with tab1:
             },
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            rtc_configuration=rtc_Configuration,
+            frontend_rtc_configuration=rtc_Configuration,
 
         )
 
