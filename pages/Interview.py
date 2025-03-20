@@ -35,23 +35,23 @@ def on_track(track):
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
 
 # RTC Configuration with STUN
-rtc_Configuration = RTCConfiguration(
+frontend_rtc_configuration = RTCConfiguration(
     {
-        "iceServers": [ {"urls": ["stun:stun.l.google.com:19302"]},
-                        {"urls": ["stun:stun3.l.google.com:5349"]},
-                        {"urls": ["stun:stun4.l.google.com:19302"]},
-                        {"urls": ["stun:stun4.l.google.com:5349"]}
-                    
-                       ],
-            "iceTransportPolicy": "all",
-            "bundlePolicy": "max-bundle",
-            "rtcpMuxPolicy": "require",
-            "sdpSemantics": "unified-plan", 
-            "codecPreferences": ["video/H264", "video/VP8"] 
-        
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:stun3.l.google.com:5349"]},
+            {"urls": ["stun:stun4.l.google.com:19302"]},
+            {"urls": ["stun:stun4.l.google.com:5349"]}
+        ],
+        "iceTransportPolicy": "all",
+        "bundlePolicy": "max-bundle",
+        "rtcpMuxPolicy": "require",
+        "sdpSemantics": "unified-plan",
+        "codecPreferences": ["video/H264", "video/VP8"]
     }
 )
 
+server_rtc_configuration = frontend_rtc_configuration
 # Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
@@ -225,8 +225,8 @@ with tab1:
             },
             on_change=convert_to_wav,
             in_recorder_factory=in_recorder_factory,
-            rtc_configuration=rtc_Configuration,
-
+            frontend_rtc_configuration=frontend_rtc_configuration,
+            server_rtc_configuration=server_rtc_configuration
         )
 
         if st.session_state.get('stream_ended_and_file_saved'):
