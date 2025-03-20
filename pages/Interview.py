@@ -129,7 +129,6 @@ with tab1:
 
     # Convert video to audio
     def convert_to_wav():
-<<<<<<< HEAD
         try:
             ctx = st.session_state.get("Start Interview")
             if ctx:
@@ -138,23 +137,11 @@ with tab1:
                     if in_file.exists() and in_file.stat().st_size > 1000:
                         output_wav = RECORD_DIR / f"{prefix}_output.wav"
                         
-=======
-        ctx = st.session_state.get("Start Interview")
-        if ctx:
-            state = ctx.state
-            if not state.playing and not state.signalling:
-                if in_file.exists() and in_file.stat().st_size > 1000:  # Ensure file is valid
-                    time.sleep(1)
-                    output_wav = RECORD_DIR / f"{prefix}_output.wav"
-                    try:
-                        # Use subprocess instead of moviepy for more reliable conversion
->>>>>>> parent of d8da104 (no files are stored everything is in temporary files)
                         subprocess.run(
                             ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
                             check=True,
                             capture_output=True
                         )
-<<<<<<< HEAD
 
                         st.session_state['audio_file_path'] = str(output_wav)
                         st.session_state['stream_ended_and_file_saved'] = True
@@ -168,14 +155,6 @@ with tab1:
 
         except Exception as e:
             st.error(f"Conversion error: {str(e)}")
-=======
-                        st.session_state['audio_file_path'] = str(output_wav)         
-                        st.session_state['stream_ended_and_file_saved'] = True
-                    except subprocess.CalledProcessError as e:
-                        st.error(f"FFmpeg error: {e.stderr.decode()}")
-                        st.session_state['stream_ended_and_file_saved'] = False
-                        logging.error(f"Audio conversion error: {str(e)}")
->>>>>>> parent of d8da104 (no files are stored everything is in temporary files)
 
     # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
