@@ -25,9 +25,8 @@ def on_signaling_state_change():
 
 @pc.on("track")
 def on_track(track):
-    if track.kind == "video" and hasattr(track, "codec") and track.codec and track.codec.mimeType == "video/rtx":
-        st.warning("Received an unsupported video format: video/rtx. Ignoring this track.")
-        return  # Ignore `video/rtx` track
+    if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
+        pc.removeTrack(track)
 
 #  Set Page Config
 st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
