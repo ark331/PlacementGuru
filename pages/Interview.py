@@ -1,176 +1,293 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
-import av
-import whisper
-import queue
-import numpy as np
-import threading
-import google.generativeai as genai
-import json
+from aiortc.contrib.media import MediaRecorder
+from gtts import gTTS
+import speech_recognition as sr
+import moviepy as mp
 import tempfile
 import os
-from gtts import gTTS
+import json
+import uuid
+import time
+from pathlib import Path
+import logging
+import google.generativeai as genai
+from aiortc import RTCPeerConnection,RTCRtpReceiver
+import subprocess
+pc = RTCPeerConnection()
 
-# Load Whisper Model
-model = whisper.load_model("base")
 
-# Queue for audio processing
-audio_queue = queue.Queue()
+@pc.on("signalingstatechange")
+def on_signaling_state_change():
+    for transceiver in pc.getTransceivers():
+        if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
+            pc.removeTrack(transceiver.receiver.track)
 
-# Configure Gemini API
-genai.configure(api_key=st.secrets["gemini"]["GEMINI_API_KEY"])
+@pc.on("track")
+def on_track(track):
+    if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
+        pc.removeTrack(track)
 
-# RTC Configuration with STUN Servers
-rtc_configuration = RTCConfiguration(
+#  Set Page Config
+st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
+
+# RTC Configuration with STUN
+rtc_Configuration = RTCConfiguration(
     {
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:stun3.l.google.com:5349"]},
-            {"urls": ["stun:stun4.l.google.com:19302"]},
-            {"urls": ["stun:stun4.l.google.com:5349"]}
-        ],
-        "iceTransportPolicy": "all",
-        "bundlePolicy": "max-bundle",
-        "rtcpMuxPolicy": "require",
-        "sdpSemantics": "unified-plan",
+        "iceServers": [ {"urls": ["stun:stun.l.google.com:19302"]},
+                        {"urls": ["stun:stun3.l.google.com:5349"]},
+                        {"urls": ["stun:stun4.l.google.com:19302"]},
+                        {"urls": ["stun:stun4.l.google.com:5349"]}
+                    
+                       ],
+            "iceTransportPolicy": "all",
+            "bundlePolicy": "max-bundle",
+            "rtcpMuxPolicy": "require",
+            "sdpSemantics": "unified-plan",  
+        
     }
 )
 
-# Function to transcribe audio in real-time
-def transcribe_audio():
-    while True:
-        audio_frames = []
-        while not audio_queue.empty():
-            frame = audio_queue.get()
-            audio_frames.append(frame)
-
-        if audio_frames:
-            # Convert audio frames to NumPy array
-            audio_np = np.concatenate(
-                [np.frombuffer(f.to_ndarray().tobytes(), dtype=np.int16) for f in audio_frames]
-            )
-
-            # Save as WAV file
-            with tempfile.NamedTemporaryFile(delete=True, suffix=".wav") as temp_audio:
-                temp_audio.write(audio_np.tobytes())
-                temp_audio.flush()
-
-                # Transcribe with Whisper
-                result = model.transcribe(temp_audio.name)
-                st.session_state["transcription"] = result["text"]
-
-# Audio callback function for WebRTC
-def audio_callback(frame: av.AudioFrame):
-    audio_queue.put(frame)
-
-# Function to fetch AI-generated interview questions
-def get_interview_questions(role, company, interviewer_type, company_type, difficulty_level):
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    prompt = json.load(open("prompts/prompts.json"))
-
-    response = model.generate_content(
-        prompt.get("interviewer").format(
-            role=role,
-            company=company,
-            interviewer_type=interviewer_type,
-            difficulty_level=difficulty_level,
-            company_type=company_type,
-        )
-    )
-
-    return json.loads(response.text)
-
-# Function for text-to-speech
-def speak_text(text):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
-        tts = gTTS(text=text, lang="en")
-        tts.save(temp_audio.name)
-
-        with open(temp_audio.name, "rb") as audio_file:
-            audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format="audio/mp3")
-
-        os.remove(temp_audio.name)
-
-# Streamlit UI Layout
-st.set_page_config(page_title="PlacementGuru", page_icon="🧊", layout="wide")
-
-# Tabs for Interview & Viva
+# Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
 with tab1:
-    col1, col2 = st.columns(2)
+    # Text-to-Speech function
+    def speak_text(text):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+            temp_audio_path = temp_audio.name
+            tts = gTTS(text=text, lang="en")
+            tts.save(temp_audio_path)
 
-    with col1:
-        role = st.text_input("Role", placeholder="Enter role")
-        company = st.selectbox("Company", ["Google", "Meta", "Wipro", "Accenture", "Other"])
-        difficulty_level = st.selectbox("Difficulty Level", ["Beginner", "Intermediate", "Expert"])
-        interviewer_type = st.selectbox("Interviewer Type", ["Professional", "Technical", "Behavioral"])
-        company_type = st.text_input("Company Type")
+        with open(temp_audio_path, "rb") as audio_file:
+            audio_bytes = audio_file.read()
+            st.audio(audio_bytes, format="audio/mp3")
+        
+        os.remove(temp_audio_path)
 
-        if st.button("Generate Questions"):
-            if role:
-                st.session_state["questions"] = get_interview_questions(
-                    role, company, interviewer_type, company_type, difficulty_level
-                )["questions"]
-                st.session_state["current_question"] = st.session_state["questions"][0]
+    # Audio listening & analysis
+    def listen_and_analyze():
+        recognizer = sr.Recognizer()
+        mic = sr.Microphone()
+        with mic as source:
+            st.info("Listening for response...")
+            recognizer.adjust_for_ambient_noise(source)
+            audio = recognizer.listen(source)
+        
+        try:
+            response_text = recognizer.recognize_google(audio)
+            st.write("Candidate's Response: ", response_text)
+            return response_text
+        except sr.UnknownValueError:
+            st.warning("Could not understand the response.")
+        except sr.RequestError:
+            st.error("Speech recognition request failed.")
 
-    with col2:
-        webstream = webrtc_streamer(
-            key="interview",
-            mode=WebRtcMode.SENDRECV,
-            media_stream_constraints={
-                "video": {"width": 960, "height": 440, "frameRate": 30},
-                "audio": {
-                    "sampleRate": 16000,
-                    "sampleSize": 16,
-                    "echoCancellation": True,
-                    "noiseSuppression": True,
-                    "channelCount": 1,
-                },
-            },
-            audio_receiver_size=1024,
-            rtc_configuration=rtc_configuration,
-            async_processing=True,
+    # Load Gemini API Key
+    genai.configure(api_key=st.secrets["gemini"]["GEMINI_API_KEY"])
+
+    # Fetch interview questions via Gemini
+    def search_on_gemini(role, company, interviewer_type, company_type, difficulty_level):
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        prompt = json.load(open("prompts/prompts.json"))
+        response = model.generate_content(
+            prompt.get('interviewer').format(
+                role=role,
+                company=company,
+                interviewer_type=interviewer_type,
+                difficulty_level=difficulty_level,
+                company_type=company_type
+            )
         )
+        results = json.loads(response.text)
+        return results
 
-        if webstream.state.playing:
-            threading.Thread(target=transcribe_audio, daemon=True).start()
+    # Directory for recordings
+    RECORD_DIR = Path("records")
+    RECORD_DIR.mkdir(exist_ok=True)
 
-    # Display transcribed text
-    if "transcription" in st.session_state:
-        st.markdown(f"**📝 Transcribed Text:** {st.session_state['transcription']}")
+    if "prefix" not in st.session_state:
+        st.session_state["prefix"] = str(uuid.uuid4())
+    prefix = st.session_state["prefix"]
+    in_file = RECORD_DIR / f"{prefix}_input.mp4"
 
-    # Display current interview question
-    if "current_question" in st.session_state:
-        st.subheader("Current Question:")
-        st.write(f"**{st.session_state['current_question']}**")
+    if "stream_ended_and_file_saved" not in st.session_state:
+        st.session_state["stream_ended_and_file_saved"] = None
 
-        if st.button("Next Question"):
-            if st.session_state["questions"]:
-                st.session_state["current_question"] = st.session_state["questions"].pop(0)
+    # Convert video to audio
+    def convert_to_wav():
+        ctx = st.session_state.get("Start Interview")
+        if ctx:
+            state = ctx.state
+            if not state.playing and not state.signalling:
+                if in_file.exists():
+                    time.sleep(1)
+                    output_wav = RECORD_DIR / f"{prefix}_output.wav"
+                    try:
+                        # Use subprocess instead of moviepy for more reliable conversion
+                        subprocess.run(
+                            ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
+                            check=True,
+                            capture_output=True
+                        )
+                        st.session_state['audio_file_path'] = str(output_wav)         
+                        st.session_state['stream_ended_and_file_saved'] = True
+                    except Exception as e:
+                        st.error(f"Error converting video to audio: {e}")
+                        st.session_state['stream_ended_and_file_saved'] = False
+                        logging.error(f"Audio conversion error: {str(e)}")
+
+    # Handle media recorder for WebRTC
+    def in_recorder_factory() -> MediaRecorder:
+        return MediaRecorder(str(in_file), format="mp4")
+
+    # Safely redirect to report page
+    def redirect_to_report():
+        try:
+            if st.session_state.get('audio_file_path') and os.path.exists(st.session_state['audio_file_path']):
+                st.switch_page('pages/Report.py')
+            else:
+                st.error("Audio file not found. Please try again.")
+                st.session_state['stream_ended_and_file_saved'] = False
+        except Exception as e:
+            st.error(f"Error redirecting to report: {str(e)}")
+            logging.error(f"Redirect error: {str(e)}")
+
+    # Start interview logic
+    def start_interview():
+        if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
+            if "current_question" not in st.session_state or st.session_state["current_question"] is None:
+                st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)
+            
+            st.write(f"**Question:** {st.session_state['current_question']}")
+            speak_text(st.session_state['current_question'])
+
+    # Handle next question
+    def next_question():
+        if "pending_questions" in st.session_state and st.session_state["pending_questions"]:
+            st.session_state["current_question"] = st.session_state["pending_questions"].pop(0)
+            if st.session_state["current_question"]:
                 speak_text(st.session_state["current_question"])
             else:
                 st.success("Interview Completed 🎉")
                 st.balloons()
 
+    # Input section
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        role = st.text_input('Role', placeholder='What role are you seeking?')
+        sec1, sec2 = st.columns(2)
+        with sec1:
+            company = st.selectbox('Company', options=('Google', 'Meta', 'Wipro', 'Accenture', 'Other'))
+            difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
+        with sec2:
+            interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour', 'Friendly'))
+            company_type = st.text_input("Company Type")
+            button_click = st.button("Search")
+
+    # WebRTC streamer
+    with col2:
+        webstream = webrtc_streamer(
+            key="Start Interview",
+            mode=WebRtcMode.SENDRECV,
+            media_stream_constraints={
+                "video":{
+                    "width":960,
+                    "height":440,
+                    "frameRate":30
+                },
+                "audio":{
+                    "sampleRate": 16000,
+                    "sampleSize": 16,
+                    "echoCancellation": True,
+                    "noiseSuppression": True,
+                    "channelCount": 1
+                }
+                
+            },
+            on_change=convert_to_wav,
+            in_recorder_factory=in_recorder_factory,
+            rtc_configuration=rtc_Configuration
+        )
+
+        if st.session_state.get('stream_ended_and_file_saved'):
+            redirect_to_report()
+
+    st.divider()
+
+    # Generate questions
+    if button_click:
+        with st.container(height=300):
+            st.markdown("""
+            <style>
+                div.stSpinner > div{
+                text-align:center;
+                align-items: center;
+                justify-content: center;
+                }
+            </style>""", unsafe_allow_html=True)
+            with st.spinner(text='Generating Questions...'):
+                if role:
+                    result = search_on_gemini(role, company, interviewer_type, company_type, difficulty_level)
+                    st.session_state['interview_question'] = result['questions'].copy()
+                    st.session_state['pending_questions'] = st.session_state['interview_question']
+                    st.subheader(result["topic-title"])
+                    for i in result['questions']:
+                        st.markdown(f'- **{i}**')
+                    start_interview()
+                else:
+                    st.warning("Please enter a role to search.")
+
+    # Show current question
+    if "current_question" in st.session_state and st.session_state["current_question"]:
+        st.divider()
+        question_col, button_col = st.columns([3, 1])
+
+        with question_col:
+            st.subheader("Current Question:")
+            st.markdown(f"**{st.session_state['current_question']}**")
+
+        with button_col:
+            if st.button("Next Question"):
+                next_question()
+
+     
+
+
 with tab2:
-    st.write("### Viva Section")
+    
+    # Columns for input
+    col1, col2 = st.columns(2)
 
-    uploaded_files = st.file_uploader("Upload your Project Files", accept_multiple_files=True)
+    with col1.container(height=350):
+        uploaded_files = st.file_uploader(
+        "Upload your BlackBook/ Project File", accept_multiple_files=True
+        )
+        # for uploaded_file in uploaded_files:
+        #     bytes_data = uploaded_file.read()
+        #     st.write("filename:", uploaded_file.name)
+        #     st.write(bytes_data)
 
-    viva_stream = webrtc_streamer(
-        key="viva",
-        mode=WebRtcMode.SENDRECV,
-        media_stream_constraints={
-            "video": {"width": 960, "height": 440},
-            "audio": {
+    with col2.container(height=350):
+        webstream = webrtc_streamer(
+            key="Start Viva",
+            mode=WebRtcMode.SENDRECV,
+            media_stream_constraints={'video': {'width': 960, 'height': 440}, "audio": {
                 "sampleRate": 16000,
                 "sampleSize": 16,
-                "echoCancellation": True,
+                'echoCancellation': True,
                 "noiseSuppression": True,
-                "channelCount": 1,
-            },
-        },
-        rtc_configuration=rtc_configuration,
-    )
+                "channelCount": 1}},
+            on_change=convert_to_wav,
+            in_recorder_factory=in_recorder_factory,
+            rtc_configuration=rtc_Configuration
+        )
+
+        if st.session_state.get('stream_ended_and_file_saved'):
+            redirect_to_report()
+    # with st.sidebar:
+    #     st.logo("assets\\img.png")
+
+    st.divider()
+    
