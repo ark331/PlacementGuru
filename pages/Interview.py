@@ -1,3 +1,4 @@
+from sys import prefix
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 from aiortc.contrib.media import MediaRecorder
@@ -14,6 +15,8 @@ import logging
 import google.generativeai as genai
 from aiortc import RTCPeerConnection,RTCRtpReceiver
 import subprocess
+import asyncio
+
 pc = RTCPeerConnection()
 
 
@@ -108,45 +111,52 @@ with tab1:
     temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     in_file = Path(temp_video.name)
 
+    # Ensure RECORD_DIR exists
+    RECORD_DIR = Path("records")
+    RECORD_DIR.mkdir(exist_ok=True)
+
+    # Generate a unique prefix
+    if "prefix" not in st.session_state:
+        st.session_state["prefix"] = "audio_" + str(uuid.uuid4())[:8]  # Shorter ID
+    prefix = st.session_state["prefix"]
+
     if "stream_ended_and_file_saved" not in st.session_state:
         st.session_state["stream_ended_and_file_saved"] = None
 
-    # Convert video to audio (Temp File)
+    # Convert video to audio
     def convert_to_wav():
-        ctx = st.session_state.get("Start Interview")
-        if ctx:
-            state = ctx.state
-            if not state.playing and not state.signalling:
-                if in_file.exists() and in_file.stat().st_size > 1000:  # Ensure valid file
-                    time.sleep(1)
-
-                    # Create a temp audio file
-                    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-                    output_wav = Path(temp_audio.name)
-
-                    try:
-                        # Convert Video to Audio using FFmpeg
+        try:
+            ctx = st.session_state.get("Start Interview")
+            if ctx:
+                state = ctx.state
+                if not state.playing and not state.signalling:
+                    if in_file.exists() and in_file.stat().st_size > 1000:
+                        output_wav = RECORD_DIR / f"{prefix}_output.wav"
+                        
                         subprocess.run(
                             ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
                             check=True,
                             capture_output=True
                         )
-                        
-                        # Store only the necessary output path
+
                         st.session_state['audio_file_path'] = str(output_wav)
                         st.session_state['stream_ended_and_file_saved'] = True
+                        
+                        # Fix event loop issue
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
 
-                        # Delete video file (Not needed after conversion)
-                        os.remove(in_file)
+                        # Delete temp video file after processing
+                        in_file.unlink(missing_ok=True)
 
-                    except subprocess.CalledProcessError as e:
-                        st.error(f"FFmpeg error: {e.stderr.decode()}")
-                        st.session_state['stream_ended_and_file_saved'] = False
-                        logging.error(f"Audio conversion error: {str(e)}")
+        except Exception as e:
+            st.error(f"Conversion error: {str(e)}")
 
     # Handle media recorder for WebRTC (Temp File)
     def in_recorder_factory() -> MediaRecorder:
-        return MediaRecorder(str(in_file), format="mp4")
+        temp_dir = tempfile.mkdtemp()  # Create a temporary directory
+        temp_file = Path(temp_dir) / "recorded_video.mp4"  # Define temp file path
+        return MediaRecorder(str(temp_file), format="mp4")
 
     # Safely redirect to report page
     def redirect_to_report():
