@@ -122,22 +122,38 @@ with tab1:
         if ctx:
             state = ctx.state
             if not state.playing and not state.signalling:
-                if in_file.exists():
+                if in_file.exists() and in_file.stat().st_size > 1000:  # Ensure file is valid
                     time.sleep(1)
                     output_wav = RECORD_DIR / f"{prefix}_output.wav"
                     try:
+<<<<<<< HEAD
                         # Use subprocess instead of moviepy for more reliable conversion
                         subprocess.run(
                             ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
                             check=True,
                             capture_output=True
                         )
+=======
+                        # Convert video to audio using FFmpeg subprocess (avoids RAM overload)
+                        command = [
+                            "ffmpeg", "-i", str(in_file),
+                            "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2",
+                            str(output_wav)
+                        ]
+                        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+>>>>>>> parent of 53ab7e2 (..)
                         st.session_state['audio_file_path'] = str(output_wav)         
                         st.session_state['stream_ended_and_file_saved'] = True
-                    except Exception as e:
-                        st.error(f"Error converting video to audio: {e}")
+                    except subprocess.CalledProcessError as e:
+                        st.error(f"FFmpeg error: {e.stderr.decode()}")
                         st.session_state['stream_ended_and_file_saved'] = False
+<<<<<<< HEAD
                         logging.error(f"Audio conversion error: {str(e)}")
+=======
+                else:
+                    st.error("The recorded video file is missing or empty.")
+>>>>>>> parent of 53ab7e2 (..)
 
     # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
