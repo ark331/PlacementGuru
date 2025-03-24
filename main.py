@@ -2,7 +2,7 @@ import streamlit as st
 import time
 
 # Set page layout
-st.set_page_config(page_title="PlacementGuru", layout="wide",page_icon="🧊")
+st.set_page_config(page_title="PlacementGuru | Home", layout="wide",page_icon="🧊")
 
 # CSS for styling
 st.markdown("""

@@ -17,22 +17,22 @@ from aiortc import RTCPeerConnection,RTCRtpReceiver
 import subprocess
 import asyncio
 
-pc = RTCPeerConnection()
+# pc = RTCPeerConnection()
 
 
-@pc.on("signalingstatechange")
-def on_signaling_state_change():
-    for transceiver in pc.getTransceivers():
-        if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
-            pc.removeTrack(transceiver.receiver.track)
+# @pc.on("signalingstatechange")
+# def on_signaling_state_change():
+#     for transceiver in pc.getTransceivers():
+#         if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
+#             pc.removeTrack(transceiver.receiver.track)
 
-@pc.on("track")
-def on_track(track):
-    if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
-        pc.removeTrack(track)
+# @pc.on("track")
+# def on_track(track):
+#     if track.kind == "video" and track.codec and track.codec.mimeType == "video/rtx":
+#         pc.removeTrack(track)
 
 #  Set Page Config
-st.set_page_config(page_title='PlacementGuru', page_icon='🧊', layout='wide')
+st.set_page_config(page_title='PlacementGuru | Interview', page_icon='🧊', layout='wide')
 
 # RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
@@ -47,7 +47,7 @@ rtc_Configuration = RTCConfiguration(
         "bundlePolicy": "max-bundle",
         "rtcpMuxPolicy": "require",
         "sdpSemantics": "unified-plan",
-        "codecPreferences": ["video/H264", "video/VP8"]
+        # "codecPreferences": ["video/H264", "video/VP8"]
     }
 )
 
@@ -129,34 +129,22 @@ with tab1:
 
     # Convert video to audio
     def convert_to_wav():
-        try:
-            ctx = st.session_state.get("Start Interview")
-            if ctx:
-                state = ctx.state
-                if not state.playing and not state.signalling:
-                    if in_file.exists() and in_file.stat().st_size > 1000:
-                        output_wav = RECORD_DIR / f"{prefix}_output.wav"
-                        
-                        subprocess.run(
-                            ["ffmpeg", "-i", str(in_file), "-vn", "-acodec", "pcm_s16le", str(output_wav)],
-                            check=True,
-                            capture_output=True
-                        )
-
-                        st.session_state['audio_file_path'] = str(output_wav)
+        ctx = st.session_state.get("Start Interview")
+        if ctx:
+            state = ctx.state
+            if not state.playing and not state.signalling:
+                if in_file.exists():
+                    time.sleep(1)
+                    output_wav = RECORD_DIR / f"{prefix}_output.wav"
+                    try:
+                        video = mp.VideoFileClip(str(in_file))
+                        video.audio.write_audiofile(str(output_wav), codec='pcm_s16le')
+                        st.session_state['audio_file_path'] = str(output_wav)  # Store path
                         st.session_state['stream_ended_and_file_saved'] = True
-                        
-                        # Fix event loop issue
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
+                    except Exception as e:
+                        st.error(f"Error converting video to audio: {e}")
+                        st.session_state['stream_ended_and_file_saved'] = False
 
-                        # Delete temp video file after processing
-                        in_file.unlink(missing_ok=True)
-
-        except Exception as e:
-            st.error(f"Conversion error: {str(e)}")
-
-    # Handle media recorder for WebRTC
     def in_recorder_factory() -> MediaRecorder:
         return MediaRecorder(str(in_file), format="mp4")
 
@@ -194,7 +182,7 @@ with tab1:
     # Input section
     col1, col2 = st.columns([1, 1])
 
-    with col1:
+    with col1.container(height=350,border=1):
         role = st.text_input('Role', placeholder='What role are you seeking?')
         sec1, sec2 = st.columns(2)
         with sec1:
@@ -206,7 +194,7 @@ with tab1:
             button_click = st.button("Search")
 
     # WebRTC streamer
-    with col2:
+    with col2.container(height=350,border=1):
         webstream = webrtc_streamer(
             key="Start Interview",
             mode=WebRtcMode.SENDRECV,
@@ -283,12 +271,12 @@ with tab2:
         uploaded_files = st.file_uploader(
         "Upload your BlackBook/ Project File", accept_multiple_files=True
         )
-        # for uploaded_file in uploaded_files:
-        #     bytes_data = uploaded_file.read()
-        #     st.write("filename:", uploaded_file.name)
-        #     st.write(bytes_data)
+        for uploaded_file in uploaded_files:
+            bytes_data = uploaded_file.read()
+            st.write("Filename:", uploaded_file.name)
+            st.write(bytes_data)
 
-    with col2.container(height=350):
+    with col2.container(height=350,border=1):
         webstream = webrtc_streamer(
             key="Start Viva",
             mode=WebRtcMode.SENDRECV,

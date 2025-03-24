@@ -89,7 +89,7 @@ def roadmap_tab():
         difficulty = st.selectbox("Select difficulty level", 
                                 options=["Beginner", "Intermediate", "Advanced"])
     
-    if st.button("Generate Roadmap", type="primary"):
+    if st.button("Generate Roadmap", type="secondary"):
         with st.spinner("Generating your career roadmap..."):
             # Get the roadmap data
             connections = get_roadmap_from_gemini(role, difficulty)
