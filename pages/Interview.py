@@ -51,7 +51,7 @@ rtc_Configuration = RTCConfiguration(
     }
 )
 
-
+st.title("PlacementGuru-AI Driven Interview Prep System")
 # Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
