@@ -152,6 +152,7 @@ with tab1:
     def redirect_to_report():
         try:
             if st.session_state.get('audio_file_path') and os.path.exists(st.session_state['audio_file_path']):
+                st.balloons()
                 st.switch_page('pages/Report.py')
             else:
                 st.error("Audio file not found. Please try again.")
