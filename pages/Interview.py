@@ -229,7 +229,6 @@ with tab1:
                 
             },
             on_change=convert_to_wav,
-            video_frame_callback=video_frame_callback,
             in_recorder_factory=in_recorder_factory,
             rtc_configuration=rtc_Configuration
         )
