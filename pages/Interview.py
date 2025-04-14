@@ -16,7 +16,9 @@ import google.generativeai as genai
 from aiortc import RTCPeerConnection,RTCRtpReceiver
 import subprocess
 import asyncio
-
+# from deepface import DeepFace
+# import av
+# import cv2
 
 # pc = RTCPeerConnection()
 
@@ -45,7 +47,7 @@ st.set_page_config(page_title='PlacementGuru | Interview', page_icon='🧊', lay
 #     except Exception as e:
 #         print(f"Emotion detection failed: {e}")
 
-    # return av.VideoFrame.from_ndarray(img, format="bgr24")
+#     return av.VideoFrame.from_ndarray(img, format="bgr24")
 # RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
     {
@@ -227,7 +229,7 @@ with tab1:
                 
             },
             on_change=convert_to_wav,
-            # video_frame_callback=video_frame_callback,
+            video_frame_callback=video_frame_callback,
             in_recorder_factory=in_recorder_factory,
             rtc_configuration=rtc_Configuration
         )
