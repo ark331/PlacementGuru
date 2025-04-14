@@ -203,10 +203,10 @@ with tab1:
         with sec1:
             company = st.selectbox('Company', options=('Google', 'Meta', 'Wipro', 'Accenture', 'Other'))
             difficulty_level = st.selectbox('Difficulty', options=('Beginner', 'Intermediate', 'Expert'))
+            button_click = st.button("Search")
         with sec2:
             interviewer_type = st.selectbox('Interviewer', options=('Professional', 'Technical', 'Behaviour', 'Friendly'))
             company_type = st.text_input("Company Type")
-            button_click = st.button("Search")
 
     # WebRTC streamer
     with col2.container(height=350,border=1):
