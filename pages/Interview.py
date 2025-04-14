@@ -233,6 +233,8 @@ with tab1:
         )
 
     if st.session_state.get('stream_ended_and_file_saved'):
+            st.balloons()
+            st.success("Recording Completed!!!")
             redirect_to_report()
 
     st.divider()
