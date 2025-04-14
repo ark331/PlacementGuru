@@ -17,6 +17,7 @@ from aiortc import RTCPeerConnection,RTCRtpReceiver
 import subprocess
 import asyncio
 
+
 # pc = RTCPeerConnection()
 
 
@@ -33,7 +34,18 @@ import asyncio
 
 #  Set Page Config
 st.set_page_config(page_title='PlacementGuru | Interview', page_icon='🧊', layout='wide')
+# def video_frame_callback(frame):
+#     img = frame.to_ndarray(format="bgr24")
 
+#     try:
+#         analysis = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
+#         dominant_emotion = analysis[0]["dominant_emotion"]
+#         # Draw the detected emotion on the frame
+#         cv2.putText(img, f"Emotion: {dominant_emotion}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+#     except Exception as e:
+#         print(f"Emotion detection failed: {e}")
+
+    # return av.VideoFrame.from_ndarray(img, format="bgr24")
 # RTC Configuration with STUN
 rtc_Configuration = RTCConfiguration(
     {
@@ -215,6 +227,7 @@ with tab1:
                 
             },
             on_change=convert_to_wav,
+            # video_frame_callback=video_frame_callback,
             in_recorder_factory=in_recorder_factory,
             rtc_configuration=rtc_Configuration
         )
