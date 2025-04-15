@@ -61,7 +61,7 @@ rtc_Configuration = RTCConfiguration(
         "bundlePolicy": "max-bundle",
         "rtcpMuxPolicy": "require",
         "sdpSemantics": "unified-plan",
-        # "codecPreferences": ["video/H264", "video/VP8"]
+        "codecPreferences": ["video/H264", "video/VP8"]
     }
 )
 
