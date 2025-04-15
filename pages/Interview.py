@@ -20,14 +20,14 @@ import asyncio
 # import av
 # import cv2
 
-# pc = RTCPeerConnection()
+pc = RTCPeerConnection()
 
 
-# @pc.on("signalingstatechange")
-# def on_signaling_state_change():
-#     for transceiver in pc.getTransceivers():
-#         if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
-#             pc.removeTrack(transceiver.receiver.track)
+@pc.on("signalingstatechange")
+def on_signaling_state_change():
+    for transceiver in pc.getTransceivers():
+        if transceiver.receiver and transceiver.receiver.track.kind == "video/rtx":
+            pc.removeTrack(transceiver.receiver.track)
 
 # @pc.on("track")
 # def on_track(track):
