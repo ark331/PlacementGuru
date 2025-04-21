@@ -48,8 +48,13 @@ with section_1.container(height=500):
 
 with section_2.container(height=500):
     def check_filler_words(transcript):
-            filler_words = ["um", "uh", "you know", "like", "so", "actually", "basically", "I mean"]
-            
+            filler_words = [
+                "um", "uh", "like", "so", "actually", "basically", "literally", "well", "okay", "right",
+                "hmm", "just", "really", "honestly", "seriously", "obviously", "totally", "anyway", "clearly",
+                "maybe", "kinda", "sorta", "stuff", "things", "perhaps", "yeah", "no", "alright", "sure",
+                "definitely", "you know", "I mean", "I guess", "I think", "you see", "to be honest", 
+                "at the end of the day", "kind of", "sort of", "I suppose", "I believe", "in my opinion"
+            ]            
             # Convert transcript to lowercase and split into words
             transcript_lower = transcript.lower()  
             words = transcript_lower.split()
