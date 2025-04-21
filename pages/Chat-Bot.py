@@ -61,6 +61,8 @@ if user_prompt:
     st.chat_message("user").markdown(user_prompt)
     if "who are you" in user_prompt.lower() or "your name" in user_prompt.lower():
         bot_response = "I am PlacementGuru, your AI assistant here to guide you in placements and career-related queries. 😊"
+    elif "your developer" in user_prompt.lower() or "who created you" in user_prompt.lower() or "who made you" in user_prompt.lower():
+        bot_response = "I was developed by Abdul Rehman Khams & Abu Sufiyan Shaikh."
     else:
         # Send user's message to Gemini-Pro and get the response
         gemini_response = st.session_state.chat_session.send_message(user_prompt)
