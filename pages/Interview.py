@@ -16,6 +16,9 @@ import google.generativeai as genai
 from aiortc import RTCPeerConnection,RTCRtpReceiver
 import subprocess
 import asyncio
+import io
+import gtts
+import playsound
 # from deepface import DeepFace
 # import av
 # import cv2
@@ -66,6 +69,9 @@ rtc_Configuration = RTCConfiguration(
 )
 
 st.title("PlacementGuru-AI Driven Interview Prep System")
+if st.session_state.get('stream_ended_and_file_saved'):
+    st.balloons()
+    st.success("🎉 Hurray you successfully completed mock interview, now submit stream and be patient.")
 # Set up tabs
 tab1, tab2 = st.tabs(["Interview", "Viva"])
 
@@ -73,15 +79,13 @@ with tab1:
     # Text-to-Speech function
     def speak_text(text):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
-            temp_audio_path = temp_audio.name
-            tts = gTTS(text=text, lang="en")
-            tts.save(temp_audio_path)
+            temp_audio_path = temp_audio.name  # Store file path
+        tts = gtts.gTTS(text)
+        tts.save(temp_audio_path)  # Save after closing file
+        playsound.playsound(temp_audio_path)  # Play the audio
+        os.remove(temp_audio_path) 
 
-        with open(temp_audio_path, "rb") as audio_file:
-            audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format="audio/mp3")
-        
-        os.remove(temp_audio_path)
+        st.session_state["question_spoken"] = True
 
     # Audio listening & analysis
     def listen_and_analyze():
@@ -192,7 +196,6 @@ with tab1:
                 speak_text(st.session_state["current_question"])
             else:
                 st.success("Interview Completed 🎉")
-                st.balloons()
 
     # Input section
     col1, col2 = st.columns([1, 1])
@@ -274,9 +277,17 @@ with tab1:
 
         with button_col:
             if st.button("Next Question"):
-                next_question()
+                    next_question()
+                    if st.session_state.get("question_spoken"):
+                        st.session_state["question_spoken"] = False
+                        st.rerun()
+                    st.balloons()
+                    st.success("Hurray you successfully completed mock interview, now submit stream and be patient.", icon="🎉")
+                    # st.experimental_set_query_params(interview_status="completed")
 
-     
+    # if st.session_state.get("question_spoken"):
+    #     st.session_state["question_spoken"] = False
+    #     st.rerun()   
 
 
 with tab2:
